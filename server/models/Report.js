@@ -82,6 +82,27 @@ const reportSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    resolution: {
+  note: {
+    type: String,
+    trim: true,
+    maxlength: 1000,
+    default: null,
+  },
+
+  resolvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+
+  resolvedAt: {
+    type: Date,
+    default: null,
+  },
+},
+
   },
   {
     timestamps: true,

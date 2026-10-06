@@ -214,8 +214,119 @@ const startAssignment = async (req, res) => {
 };
 
 
+const resolveAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { resolutionNote } = req.body;
+
+    if (!resolutionNote || !resolutionNote.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Resolution note is required",
+      });
+    }
+
+    const assignment = await Assignment.findById(id);
+
+    if (!assignment) {
+      return res.status(404).json({
+        success: false,
+        message: "Assignment not found",
+      });
+    }
+
+    // Only the assigned officer can resolve it
+    if (
+      assignment.officer.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You do not have permission to resolve this assignment",
+      });
+    }
+
+    // Only an in-progress assignment can be resolved
+    if (assignment.status !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Assignment cannot be resolved because its current status is "${assignment.status}"`,
+      });
+    }
+
+    const Report = require("../models/Report");
+
+    const report = await Report.findById(
+      assignment.report
+    );
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Assignment exists but the associated report was not found",
+      });
+    }
+
+    // Report must also be in progress
+    if (report.status !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Report cannot be resolved because its current status is "${report.status}"`,
+      });
+    }
+
+    // Update assignment
+    assignment.status = "completed";
+    assignment.completedAt = new Date();
+
+    await assignment.save();
+
+    // Update report
+    report.status = "resolved";
+
+    report.resolution = {
+      note: resolutionNote.trim(),
+      resolvedBy: req.user._id,
+      resolvedAt: new Date(),
+    };
+
+    await report.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Assignment resolved successfully",
+
+      assignment: {
+        id: assignment._id,
+        status: assignment.status,
+        completedAt: assignment.completedAt,
+      },
+
+      report: {
+        id: report._id,
+        status: report.status,
+        resolution: report.resolution,
+      },
+    });
+  } catch (error) {
+    console.error("Resolve assignment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while resolving assignment",
+    });
+  }
+};
+
+
+
 module.exports = {
   getMyAssignments,
     acceptAssignment,
     startAssignment,
+    resolveAssignment,
 };

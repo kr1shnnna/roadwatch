@@ -7,6 +7,7 @@ const {
   getMyAssignments,
   acceptAssignment,
   startAssignment,
+  resolveAssignment,
 } = require("../controllers/assignment.controller");
 
 const router = express.Router();
@@ -33,6 +34,15 @@ router.patch(
   requireRole("officer"),
   startAssignment
 );
+
+
+router.patch(
+  "/:id/resolve",
+  protect,
+  requireRole("officer"),
+  resolveAssignment
+);
+
 
 
 module.exports = router;
