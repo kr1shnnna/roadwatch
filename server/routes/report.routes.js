@@ -8,6 +8,7 @@ const {
     getMyReports,
     getReportById,
     getReports,
+    getNearbyReports,
 } = require("../controllers/report.controller");
 
 const router = express.Router();
@@ -26,6 +27,13 @@ router.get(
   requireRole("citizen"),
   getMyReports
 );
+
+
+router.get(
+  "/nearby",
+  getNearbyReports
+);
+
 
 router.get(
   "/",

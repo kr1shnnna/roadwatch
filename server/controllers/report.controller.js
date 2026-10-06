@@ -171,10 +171,101 @@ const getReports = async (req, res) => {
 };
 
 
+const getNearbyReports = async (req, res) => {
+  try {
+    const { lat, lng, radius } = req.query;
+
+    // 1. Check required parameters
+    if (lat === undefined || lng === undefined || radius === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "lat, lng, and radius are required",
+      });
+    }
+
+    // 2. Convert query strings to numbers
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    const searchRadius = Number(radius);
+
+    // 3. Check that they are valid numbers
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(searchRadius)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "lat, lng, and radius must be valid numbers",
+      });
+    }
+
+    // 4. Validate latitude
+    if (latitude < -90 || latitude > 90) {
+      return res.status(400).json({
+        success: false,
+        message: "Latitude must be between -90 and 90",
+      });
+    }
+
+    // 5. Validate longitude
+    if (longitude < -180 || longitude > 180) {
+      return res.status(400).json({
+        success: false,
+        message: "Longitude must be between -180 and 180",
+      });
+    }
+
+    // 6. Validate radius
+    // Radius is measured in meters
+    if (searchRadius <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Radius must be greater than 0",
+      });
+    }
+
+    // 7. Find reports near the given coordinates
+    const reports = await Report.find({
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          $maxDistance: searchRadius,
+        },
+      },
+    })
+      .select(
+        "title description location category status priority reportedBy assignedTo createdAt updatedAt"
+      )
+      .populate("reportedBy", "name")
+      .populate("assignedTo", "name role");
+
+    return res.status(200).json({
+      success: true,
+      count: reports.length,
+      radius: searchRadius,
+      reports,
+    });
+  } catch (error) {
+    console.error("Get nearby reports error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching nearby reports",
+    });
+  }
+};
+
+
+
 
 module.exports = {
   createReport,
     getMyReports,
     getReportById,
     getReports,
+    getNearbyReports,
 };
