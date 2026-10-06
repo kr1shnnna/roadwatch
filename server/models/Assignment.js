@@ -37,6 +37,7 @@ const assignmentSchema = new mongoose.Schema(
       enum: [
         "assigned",
         "accepted",
+        "in_progress",
         "rejected",
         "completed",
       ],

@@ -6,6 +6,7 @@ const requireRole = require("../middleware/role");
 const {
   getMyAssignments,
   acceptAssignment,
+  startAssignment,
 } = require("../controllers/assignment.controller");
 
 const router = express.Router();
@@ -24,5 +25,14 @@ router.patch(
   requireRole("officer"),
   acceptAssignment
 );
+
+
+router.patch(
+  "/:id/start",
+  protect,
+  requireRole("officer"),
+  startAssignment
+);
+
 
 module.exports = router;
