@@ -1,4 +1,7 @@
 const Report = require("../models/Report");
+const { routeReport } = require("../services/routing.service");
+
+
 
 const createReport = async (req, res) => {
   try {
@@ -41,6 +44,16 @@ const createReport = async (req, res) => {
 
     // Validate coordinate ranges
     if (
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(latitude)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Coordinates must be valid numbers",
+      });
+    }
+
+    if (
       longitude < -180 ||
       longitude > 180 ||
       latitude < -90 ||
@@ -52,21 +65,89 @@ const createReport = async (req, res) => {
       });
     }
 
+    // 1. Save the report first
     const report = await Report.create({
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       location,
       category,
       priority: priority || "medium",
-
-      // Never take reportedBy from req.body
       reportedBy: req.user._id,
     });
 
+    // 2. Attempt automatic routing
+    let routingResult = null;
+
+    try {
+      routingResult = await routeReport(report);
+    } catch (routingError) {
+      console.error(
+        "Automatic routing failed:",
+        routingError.message
+      );
+    }
+
+    // 3. Return the report + routing information
     return res.status(201).json({
       success: true,
       message: "Report created successfully",
-      report,
+
+      report: {
+        id: report._id,
+        title: report.title,
+        description: report.description,
+        location: report.location,
+        category: report.category,
+        priority: report.priority,
+        status: report.status,
+        reportedBy: report.reportedBy,
+        assignedTo: report.assignedTo,
+        createdAt: report.createdAt,
+        updatedAt: report.updatedAt,
+      },
+
+      routing: routingResult
+        ? {
+            message: routingResult.message,
+
+            serviceArea: routingResult.serviceArea
+              ? {
+                  id: routingResult.serviceArea._id,
+                  name: routingResult.serviceArea.name,
+                  city: routingResult.serviceArea.city,
+                }
+              : null,
+
+            department: routingResult.department
+              ? {
+                  id: routingResult.department._id,
+                  name: routingResult.department.name,
+                }
+              : null,
+
+            officer: routingResult.officer
+              ? {
+                  id: routingResult.officer._id,
+                  name: routingResult.officer.name,
+                  email: routingResult.officer.email,
+                }
+              : null,
+
+            assignment: routingResult.assignment
+              ? {
+                  id: routingResult.assignment._id,
+                  status: routingResult.assignment.status,
+                  assignedAt: routingResult.assignment.assignedAt,
+                }
+              : null,
+          }
+        : {
+            message: "Report created but automatic routing failed",
+            serviceArea: null,
+            department: null,
+            officer: null,
+            assignment: null,
+          },
     });
   } catch (error) {
     console.error("Create report error:", error);
@@ -77,6 +158,7 @@ const createReport = async (req, res) => {
     });
   }
 };
+
 
 
 const getMyReports = async (req, res) => {

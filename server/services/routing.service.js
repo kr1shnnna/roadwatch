@@ -1,5 +1,7 @@
 const ServiceArea = require("../models/ServiceArea");
 const Department = require("../models/Department");
+const User = require("../models/User");
+const Assignment = require("../models/Assignment");
 
 const routeReport = async (report) => {
   try {
@@ -33,11 +35,13 @@ const routeReport = async (report) => {
       return {
         serviceArea: null,
         department: null,
+        officer: null,
+        assignment: null,
         message: "No active service area found for this location",
       };
     }
 
-    // 2. Find the department responsible for this category
+    // 2. Find the department responsible for the category
     const department = await Department.findOne({
       isActive: true,
       categories: category,
@@ -47,15 +51,53 @@ const routeReport = async (report) => {
       return {
         serviceArea,
         department: null,
+        officer: null,
+        assignment: null,
         message: "No active department found for this category",
       };
     }
 
-    // 3. Return routing result
+    // 3. Find an active officer assigned to
+    //    both this department and service area
+    const officer = await User.findOne({
+      role: "officer",
+      isActive: true,
+      department: department._id,
+      assignedAreas: serviceArea._id,
+    });
+
+    if (!officer) {
+      return {
+        serviceArea,
+        department,
+        officer: null,
+        assignment: null,
+        message:
+          "No active officer found for this service area and department",
+      };
+    }
+
+    // 4. Create the assignment
+    const assignment = await Assignment.create({
+      report: report._id,
+      serviceArea: serviceArea._id,
+      department: department._id,
+      officer: officer._id,
+      status: "assigned",
+    });
+
+    // 5. Update the report with the assigned officer
+    report.assignedTo = officer._id;
+    report.status = "assigned";
+
+    await report.save();
+
     return {
       serviceArea,
       department,
-      message: "Report routed successfully",
+      officer,
+      assignment,
+      message: "Report routed and assigned successfully",
     };
   } catch (error) {
     console.error("Report routing error:", error);

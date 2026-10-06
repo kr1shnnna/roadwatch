@@ -29,10 +29,28 @@ const userSchema = new mongoose.Schema(
       enum: ["citizen", "officer", "authority_admin", "super_admin"],
       default: "citizen",
     },
+
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+    },
+
+    assignedAreas: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ServiceArea",
+      },
+    ],
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User = mongoose.model("User", userSchema);
