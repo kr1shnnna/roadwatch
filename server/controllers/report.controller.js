@@ -78,6 +78,31 @@ const createReport = async (req, res) => {
   }
 };
 
+
+const getMyReports = async (req, res) => {
+  try {
+    const reports = await Report.find({
+      reportedBy: req.user._id,
+    })
+      .sort({ createdAt: -1 })
+      .populate("assignedTo", "name email role");
+
+    return res.status(200).json({
+      success: true,
+      count: reports.length,
+      reports,
+    });
+  } catch (error) {
+    console.error("Get my reports error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your reports",
+    });
+  }
+};
+
 module.exports = {
   createReport,
+    getMyReports,
 };
