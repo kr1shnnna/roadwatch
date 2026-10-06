@@ -102,7 +102,79 @@ const getMyReports = async (req, res) => {
   }
 };
 
+
+const getReportById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await Report.findById(id)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name email role");
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    // Ownership check
+    if (
+      report.reportedBy._id.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to view this report",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      report,
+    });
+  } catch (error) {
+    console.error("Get report by ID error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching report",
+    });
+  }
+};
+
+
+
+const getReports = async (req, res) => {
+  try {
+    const reports = await Report.find({})
+      .select(
+        "title description location category status priority reportedBy assignedTo createdAt updatedAt"
+      )
+      .populate("reportedBy", "name")
+      .populate("assignedTo", "name role")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: reports.length,
+      reports,
+    });
+  } catch (error) {
+    console.error("Get reports error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching reports",
+    });
+  }
+};
+
+
+
 module.exports = {
   createReport,
     getMyReports,
+    getReportById,
+    getReports,
 };

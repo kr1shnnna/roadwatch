@@ -6,6 +6,8 @@ const requireRole = require("../middleware/role");
 const {
   createReport,
     getMyReports,
+    getReportById,
+    getReports,
 } = require("../controllers/report.controller");
 
 const router = express.Router();
@@ -24,6 +26,21 @@ router.get(
   requireRole("citizen"),
   getMyReports
 );
+
+router.get(
+  "/",
+  getReports
+);
+
+
+router.get(
+  "/:id",
+  protect,
+  requireRole("citizen"),
+  getReportById
+);
+
+
 
 
 module.exports = router;
