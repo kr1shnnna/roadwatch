@@ -34,14 +34,15 @@ const assignmentSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: [
-        "assigned",
-        "accepted",
-        "in_progress",
-        "rejected",
-        "completed",
-      ],
+      enum: ["assigned", "accepted", "in_progress", "rejected", "completed"],
       default: "assigned",
+    },
+
+    rejectionReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: null,
     },
 
     assignedAt: {
@@ -61,12 +62,9 @@ const assignmentSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const Assignment = mongoose.model(
-  "Assignment",
-  assignmentSchema
-);
+const Assignment = mongoose.model("Assignment", assignmentSchema);
 
 module.exports = Assignment;

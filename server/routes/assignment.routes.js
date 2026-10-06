@@ -8,6 +8,7 @@ const {
   acceptAssignment,
   startAssignment,
   resolveAssignment,
+  rejectAssignment,
 } = require("../controllers/assignment.controller");
 
 const router = express.Router();
@@ -41,6 +42,14 @@ router.patch(
   protect,
   requireRole("officer"),
   resolveAssignment
+);
+
+
+router.patch(
+  "/:id/reject",
+  protect,
+  requireRole("officer"),
+  rejectAssignment
 );
 
 
