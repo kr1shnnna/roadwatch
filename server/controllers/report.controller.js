@@ -1,5 +1,6 @@
 const Report = require("../models/Report");
 const { routeReport } = require("../services/routing.service");
+const Confirmation = require("../models/Confirmation");
 
 
 
@@ -343,6 +344,161 @@ const getNearbyReports = async (req, res) => {
 
 
 
+const confirmReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await Report.findById(id);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    // Only the citizen who created the report can confirm it
+    if (
+      report.reportedBy.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You can only verify reports that you created",
+      });
+    }
+
+    // Only resolved reports can be confirmed
+    if (report.status !== "resolved") {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Report cannot be confirmed because its current status is "${report.status}"`,
+      });
+    }
+
+    // Prevent duplicate confirmation
+    const existingConfirmation =
+      await Confirmation.findOne({
+        report: report._id,
+        user: req.user._id,
+      });
+
+    if (existingConfirmation) {
+      return res.status(409).json({
+        success: false,
+        message: "You have already verified this report",
+      });
+    }
+
+    const confirmation = await Confirmation.create({
+      report: report._id,
+      user: req.user._id,
+      type: "resolved",
+    });
+
+    report.status = "confirmed";
+
+    await report.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Report confirmed successfully",
+      confirmation,
+      report: {
+        id: report._id,
+        status: report.status,
+      },
+    });
+  } catch (error) {
+    console.error("Confirm report error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while confirming report",
+    });
+  }
+};
+
+
+const reopenReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await Report.findById(id);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    // Only the citizen who created the report can reopen it
+    if (
+      report.reportedBy.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "You can only reopen reports that you created",
+      });
+    }
+
+    // Only resolved reports can be reopened
+    if (report.status !== "resolved") {
+      return res.status(400).json({
+        success: false,
+        message:
+          `Report cannot be reopened because its current status is "${report.status}"`,
+      });
+    }
+
+    const existingConfirmation =
+      await Confirmation.findOne({
+        report: report._id,
+        user: req.user._id,
+      });
+
+    if (existingConfirmation) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "You have already verified this report and cannot reopen it",
+      });
+    }
+
+    await Confirmation.create({
+      report: report._id,
+      user: req.user._id,
+      type: "still_exists",
+    });
+
+    report.status = "reopened";
+
+    await report.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Report reopened successfully",
+      report: {
+        id: report._id,
+        status: report.status,
+      },
+    });
+  } catch (error) {
+    console.error("Reopen report error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while reopening report",
+    });
+  }
+};
+
+
 
 module.exports = {
   createReport,
@@ -350,4 +506,6 @@ module.exports = {
     getReportById,
     getReports,
     getNearbyReports,
+    confirmReport,
+    reopenReport,
 };

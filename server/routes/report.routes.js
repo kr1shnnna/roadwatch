@@ -9,6 +9,8 @@ const {
     getReportById,
     getReports,
     getNearbyReports,
+    confirmReport,
+    reopenReport,
 } = require("../controllers/report.controller");
 
 const router = express.Router();
@@ -38,6 +40,21 @@ router.get(
 router.get(
   "/",
   getReports
+);
+
+
+router.patch(
+  "/:id/confirm",
+  protect,
+  requireRole("citizen"),
+  confirmReport
+);
+
+router.patch(
+  "/:id/reopen",
+  protect,
+  requireRole("citizen"),
+  reopenReport
 );
 
 
