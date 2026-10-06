@@ -422,6 +422,7 @@ const confirmReport = async (req, res) => {
 };
 
 
+
 const reopenReport = async (req, res) => {
   try {
     const { id } = req.params;
@@ -431,61 +432,89 @@ const reopenReport = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: "Report not found",
+        message: "Report not found.",
       });
     }
 
-    // Only the citizen who created the report can reopen it
-    if (
-      report.reportedBy.toString() !==
-      req.user._id.toString()
-    ) {
+    // Only the original reporter can reopen the report
+    if (report.reportedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You can only reopen reports that you created",
+        message: "You can only reopen your own reports.",
       });
     }
 
-    // Only resolved reports can be reopened
+    // A report can only be reopened after being resolved
     if (report.status !== "resolved") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be reopened because its current status is "${report.status}"`,
+        message: "Only resolved reports can be reopened.",
       });
     }
 
-    const existingConfirmation =
-      await Confirmation.findOne({
-        report: report._id,
-        user: req.user._id,
-      });
+    // Prevent duplicate verification
+    const existingConfirmation = await Confirmation.findOne({
+      report: report._id,
+      user: req.user._id,
+    });
 
     if (existingConfirmation) {
-      return res.status(409).json({
+      return res.status(400).json({
         success: false,
-        message:
-          "You have already verified this report and cannot reopen it",
+        message: "You have already submitted a verification for this report.",
       });
     }
 
-    await Confirmation.create({
+    // Record the citizen's decision
+    const confirmation = await Confirmation.create({
       report: report._id,
       user: req.user._id,
       type: "still_exists",
     });
 
+    // Mark the report as reopened before routing
     report.status = "reopened";
+    report.assignedTo = null;
 
     await report.save();
 
+    // Route the reopened report again
+    let routingResult;
+
+    try {
+      routingResult = await routeReport(report);
+    } catch (routingError) {
+      console.error(
+        "Reopened report routing failed:",
+        routingError.message
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          "Report was reopened, but automatic reassignment failed.",
+        confirmation,
+      });
+    }
+
+    // Re-fetch the report so the response contains the latest state
+    const updatedReport = await Report.findById(report._id)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name email role");
+
     return res.status(200).json({
       success: true,
-      message: "Report reopened successfully",
-      report: {
-        id: report._id,
-        status: report.status,
+      message: routingResult.officer
+        ? "Report reopened and reassigned successfully."
+        : "Report reopened, but no eligible officer is currently available.",
+      report: updatedReport,
+      confirmation,
+      routing: {
+        serviceArea: routingResult.serviceArea,
+        department: routingResult.department,
+        officer: routingResult.officer,
+        assignment: routingResult.assignment,
+        message: routingResult.message,
       },
     });
   } catch (error) {
@@ -493,10 +522,11 @@ const reopenReport = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Server error while reopening report",
+      message: "Failed to reopen report.",
     });
   }
 };
+
 
 
 

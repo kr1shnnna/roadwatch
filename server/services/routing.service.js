@@ -41,7 +41,7 @@ const routeReport = async (report) => {
       };
     }
 
-    // 2. Find the department responsible for the category
+    // 2. Find the department responsible for this category
     const department = await Department.findOne({
       isActive: true,
       categories: category,
@@ -57,8 +57,7 @@ const routeReport = async (report) => {
       };
     }
 
-    // 3. Find an active officer assigned to
-    //    both this department and service area
+    // 3. Find an eligible active officer
     const officer = await User.findOne({
       role: "officer",
       isActive: true,
@@ -77,7 +76,9 @@ const routeReport = async (report) => {
       };
     }
 
-    // 4. Create the assignment
+    // 4. Create a NEW assignment
+    // The previous assignment remains in the database
+    // as historical evidence of the previous resolution attempt.
     const assignment = await Assignment.create({
       report: report._id,
       serviceArea: serviceArea._id,
@@ -86,7 +87,7 @@ const routeReport = async (report) => {
       status: "assigned",
     });
 
-    // 5. Update the report with the assigned officer
+    // 5. Update the report to the new assignment
     report.assignedTo = officer._id;
     report.status = "assigned";
 
