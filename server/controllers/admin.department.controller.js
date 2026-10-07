@@ -89,7 +89,82 @@ const getDepartmentById = async (req, res) => {
 };
 
 
+
+const updateDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { categories, description } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid department ID.",
+      });
+    }
+
+    const department = await Department.findById(id);
+
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        message: "Department not found.",
+      });
+    }
+
+    // Categories are optional, but if provided they must be an array
+    if (categories !== undefined) {
+      if (!Array.isArray(categories) || categories.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Categories must be a non-empty array.",
+        });
+      }
+
+      department.categories = categories;
+    }
+
+    // Description is optional
+    if (description !== undefined) {
+      if (description !== null && typeof description !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "Description must be a string or null.",
+        });
+      }
+
+      department.description =
+        typeof description === "string"
+          ? description.trim()
+          : null;
+    }
+
+    await department.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Department updated successfully.",
+      department,
+    });
+  } catch (error) {
+    console.error("Update department error:", error);
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update department.",
+    });
+  }
+};
+
+
 module.exports = {
   getDepartments,
     getDepartmentById,
+    updateDepartment,
 };

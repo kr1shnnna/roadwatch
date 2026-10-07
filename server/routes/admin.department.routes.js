@@ -3,6 +3,7 @@ const express = require("express");
 const {
   getDepartments,
   getDepartmentById,
+  updateDepartment,
 } = require("../controllers/admin.department.controller");
 
 const protect = require("../middleware/auth");
@@ -23,6 +24,14 @@ router.get(
   protect,
   requireRole("authority_admin", "super_admin"),
   getDepartmentById
+);
+
+
+router.patch(
+  "/:id",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  updateDepartment
 );
 
 
