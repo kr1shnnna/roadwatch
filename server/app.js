@@ -11,6 +11,7 @@ const notificationRoutes = require("./routes/notification.routes");
 const adminRoutes = require("./routes/admin.routes");
 const adminReportRoutes = require("./routes/admin.report.routes");
 const adminOfficerRoutes = require("./routes/admin.officer.routes");
+const adminDepartmentRoutes = require("./routes/admin.department.routes");
 
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/reports", adminReportRoutes);
 app.use("/api/admin/officers", adminOfficerRoutes);
+app.use("/api/admin/departments", adminDepartmentRoutes);
 
 app.get("/", (req, res) => {
   res.json({
