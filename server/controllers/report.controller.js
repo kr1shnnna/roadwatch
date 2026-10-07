@@ -6,7 +6,7 @@ const Confirmation = require("../models/Confirmation");
 
 const createReport = async (req, res) => {
   try {
-    const {
+    let {
       title,
       description,
       location,
@@ -15,16 +15,25 @@ const createReport = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (
-      !title ||
-      !description ||
-      !location ||
-      !category
-    ) {
+    if (!title || !description || !location || !category) {
       return res.status(400).json({
         success: false,
         message:
           "Title, description, location, and category are required",
+      });
+    }
+
+    // Parse location because multipart/form-data sends it as a string
+    try {
+      location =
+        typeof location === "string"
+          ? JSON.parse(location)
+          : location;
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Location must be valid JSON with type and coordinates",
       });
     }
 
@@ -44,10 +53,7 @@ const createReport = async (req, res) => {
     const [longitude, latitude] = location.coordinates;
 
     // Validate coordinate ranges
-    if (
-      !Number.isFinite(longitude) ||
-      !Number.isFinite(latitude)
-    ) {
+    if (!Number.isFinite(Number(longitude)) || !Number.isFinite(Number(latitude))) {
       return res.status(400).json({
         success: false,
         message: "Coordinates must be valid numbers",
@@ -55,10 +61,10 @@ const createReport = async (req, res) => {
     }
 
     if (
-      longitude < -180 ||
-      longitude > 180 ||
-      latitude < -90 ||
-      latitude > 90
+      Number(longitude) < -180 ||
+      Number(longitude) > 180 ||
+      Number(latitude) < -90 ||
+      Number(latitude) > 90
     ) {
       return res.status(400).json({
         success: false,
@@ -66,17 +72,30 @@ const createReport = async (req, res) => {
       });
     }
 
-    // 1. Save the report first
+    // Normalize coordinates to numbers
+    location.coordinates = [
+      Number(longitude),
+      Number(latitude),
+    ];
+
+    // Collect uploaded Cloudinary images
+    const evidenceImages = (req.files || []).map((file) => ({
+      url: file.path,
+      publicId: file.filename,
+    }));
+
+    // Create report
     const report = await Report.create({
-      title: title.trim(),
-      description: description.trim(),
+      title,
+      description,
       location,
       category,
-      priority: priority || "medium",
+      priority,
       reportedBy: req.user._id,
+      evidenceImages,
     });
 
-    // 2. Attempt automatic routing
+    // Attempt automatic routing
     let routingResult = null;
 
     try {
@@ -88,7 +107,7 @@ const createReport = async (req, res) => {
       );
     }
 
-    // 3. Return the report + routing information
+    // Return report + routing information
     return res.status(201).json({
       success: true,
       message: "Report created successfully",
@@ -103,6 +122,7 @@ const createReport = async (req, res) => {
         status: report.status,
         reportedBy: report.reportedBy,
         assignedTo: report.assignedTo,
+        evidenceImages: report.evidenceImages,
         createdAt: report.createdAt,
         updatedAt: report.updatedAt,
       },
@@ -143,7 +163,8 @@ const createReport = async (req, res) => {
               : null,
           }
         : {
-            message: "Report created but automatic routing failed",
+            message:
+              "Report created but automatic routing failed",
             serviceArea: null,
             department: null,
             officer: null,
@@ -159,7 +180,6 @@ const createReport = async (req, res) => {
     });
   }
 };
-
 
 
 const getMyReports = async (req, res) => {
@@ -185,7 +205,6 @@ const getMyReports = async (req, res) => {
   }
 };
 
-
 const getReportById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -202,10 +221,7 @@ const getReportById = async (req, res) => {
     }
 
     // Ownership check
-    if (
-      report.reportedBy._id.toString() !==
-      req.user._id.toString()
-    ) {
+    if (report.reportedBy._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: "You do not have permission to view this report",
@@ -226,13 +242,11 @@ const getReportById = async (req, res) => {
   }
 };
 
-
-
 const getReports = async (req, res) => {
   try {
     const reports = await Report.find({})
       .select(
-        "title description location category status priority reportedBy assignedTo createdAt updatedAt"
+        "title description location category status priority reportedBy assignedTo createdAt updatedAt",
       )
       .populate("reportedBy", "name")
       .populate("assignedTo", "name role")
@@ -252,7 +266,6 @@ const getReports = async (req, res) => {
     });
   }
 };
-
 
 const getNearbyReports = async (req, res) => {
   try {
@@ -321,7 +334,7 @@ const getNearbyReports = async (req, res) => {
       },
     })
       .select(
-        "title description location category status priority reportedBy assignedTo createdAt updatedAt"
+        "title description location category status priority reportedBy assignedTo createdAt updatedAt",
       )
       .populate("reportedBy", "name")
       .populate("assignedTo", "name role");
@@ -342,8 +355,6 @@ const getNearbyReports = async (req, res) => {
   }
 };
 
-
-
 const confirmReport = async (req, res) => {
   try {
     const { id } = req.params;
@@ -358,14 +369,10 @@ const confirmReport = async (req, res) => {
     }
 
     // Only the citizen who created the report can confirm it
-    if (
-      report.reportedBy.toString() !==
-      req.user._id.toString()
-    ) {
+    if (report.reportedBy.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You can only verify reports that you created",
+        message: "You can only verify reports that you created",
       });
     }
 
@@ -373,17 +380,15 @@ const confirmReport = async (req, res) => {
     if (report.status !== "resolved") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be confirmed because its current status is "${report.status}"`,
+        message: `Report cannot be confirmed because its current status is "${report.status}"`,
       });
     }
 
     // Prevent duplicate confirmation
-    const existingConfirmation =
-      await Confirmation.findOne({
-        report: report._id,
-        user: req.user._id,
-      });
+    const existingConfirmation = await Confirmation.findOne({
+      report: report._id,
+      user: req.user._id,
+    });
 
     if (existingConfirmation) {
       return res.status(409).json({
@@ -420,8 +425,6 @@ const confirmReport = async (req, res) => {
     });
   }
 };
-
-
 
 const reopenReport = async (req, res) => {
   try {
@@ -484,15 +487,11 @@ const reopenReport = async (req, res) => {
     try {
       routingResult = await routeReport(report);
     } catch (routingError) {
-      console.error(
-        "Reopened report routing failed:",
-        routingError.message
-      );
+      console.error("Reopened report routing failed:", routingError.message);
 
       return res.status(500).json({
         success: false,
-        message:
-          "Report was reopened, but automatic reassignment failed.",
+        message: "Report was reopened, but automatic reassignment failed.",
         confirmation,
       });
     }
@@ -527,15 +526,12 @@ const reopenReport = async (req, res) => {
   }
 };
 
-
-
-
 module.exports = {
   createReport,
-    getMyReports,
-    getReportById,
-    getReports,
-    getNearbyReports,
-    confirmReport,
-    reopenReport,
+  getMyReports,
+  getReportById,
+  getReports,
+  getNearbyReports,
+  confirmReport,
+  reopenReport,
 };
