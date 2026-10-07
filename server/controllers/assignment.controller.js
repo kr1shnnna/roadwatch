@@ -1,4 +1,8 @@
 const Assignment = require("../models/Assignment");
+const {
+  createNotification,
+} = require("../services/notification.service");
+
 
 const getMyAssignments = async (req, res) => {
   try {
@@ -271,6 +275,25 @@ const resolveAssignment = async (req, res) => {
     };
 
     await report.save();
+
+
+
+    await createNotification({
+  recipient: report.reportedBy,
+
+  type: "report_resolved",
+
+  title: "Report resolved",
+
+  message:
+    "Your reported issue has been marked as resolved. Please verify the resolution.",
+
+  report: report._id,
+
+  assignment: assignment._id,
+
+  eventKey: `assignment:${assignment._id}:resolved`,
+});
 
     return res.status(200).json({
       success: true,

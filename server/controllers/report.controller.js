@@ -410,6 +410,25 @@ const confirmReport = async (req, res) => {
 
     await report.save();
 
+
+    if (report.assignedTo) {
+  await createNotification({
+    recipient: report.assignedTo,
+
+    type: "report_confirmed",
+
+    title: "Report confirmed",
+
+    message:
+      "The citizen has confirmed that the reported issue has been resolved.",
+
+    report: report._id,
+
+    eventKey: `report:${report._id}:confirmed`,
+  });
+}
+
+
     return res.status(200).json({
       success: true,
       message: "Report confirmed successfully",
@@ -518,6 +537,26 @@ const reopenReport = async (req, res) => {
         confirmation,
       });
     }
+
+    if (routingResult && routingResult.officer) {
+  await createNotification({
+    recipient: routingResult.officer._id,
+
+    type: "report_reopened",
+
+    title: "Report reopened",
+
+    message:
+      "A citizen has reopened a previously resolved report. Please review the issue again.",
+
+    report: report._id,
+
+    assignment: routingResult.assignment?._id,
+
+    eventKey: `assignment:${routingResult.assignment._id}:reopened`,
+  });
+}
+
 
     // Re-fetch the report so the response contains the latest state
     const updatedReport = await Report.findById(report._id)
