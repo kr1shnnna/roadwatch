@@ -5,6 +5,7 @@ const User = require("../models/User");
 const Department = require("../models/Department");
 const ServiceArea = require("../models/ServiceArea");
 
+const { createAuditLog } = require("../services/audit.service");
 
 // GET /api/admin/officers
 const getOfficers = async (req, res) => {
@@ -69,23 +70,15 @@ const getOfficers = async (req, res) => {
   }
 };
 
-
 // POST /api/admin/officers
 const createOfficer = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      department,
-      assignedAreas = [],
-    } = req.body;
+    const { name, email, password, department, assignedAreas = [] } = req.body;
 
     if (!name || !email || !password || !department) {
       return res.status(400).json({
         success: false,
-        message:
-          "Name, email, password, and department are required.",
+        message: "Name, email, password, and department are required.",
       });
     }
 
@@ -155,8 +148,7 @@ const createOfficer = async (req, res) => {
       if (areaCount !== validAreaIds.length) {
         return res.status(400).json({
           success: false,
-          message:
-            "One or more service areas are invalid or inactive.",
+          message: "One or more service areas are invalid or inactive.",
         });
       }
     }
@@ -171,6 +163,20 @@ const createOfficer = async (req, res) => {
       department,
       assignedAreas: validAreaIds,
       isActive: true,
+    });
+
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "officer.created",
+      entityType: "User",
+      entityId: officer._id,
+      details: {
+        name: officer.name,
+        email: officer.email,
+        departmentId: officer.department,
+        assignedAreaIds: officer.assignedAreas,
+      },
     });
 
     const safeOfficer = await User.findById(officer._id)
@@ -192,8 +198,6 @@ const createOfficer = async (req, res) => {
     });
   }
 };
-
-
 
 // GET /api/admin/officers/:id
 const getOfficerById = async (req, res) => {
@@ -236,16 +240,10 @@ const getOfficerById = async (req, res) => {
   }
 };
 
-
 const updateOfficer = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      email,
-      department,
-      assignedAreas,
-    } = req.body;
+    const { name, email, department, assignedAreas } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -265,6 +263,14 @@ const updateOfficer = async (req, res) => {
         message: "Officer not found.",
       });
     }
+
+    // Capture previous values before making changes
+    const previousValues = {
+      name: officer.name,
+      email: officer.email,
+      departmentId: officer.department,
+      assignedAreaIds: [...officer.assignedAreas],
+    };
 
     // Update name
     if (name !== undefined) {
@@ -366,6 +372,63 @@ const updateOfficer = async (req, res) => {
 
     await officer.save();
 
+    // Determine which fields changed
+    const changedFields = [];
+
+    if (previousValues.name !== officer.name) {
+      changedFields.push("name");
+    }
+
+    if (previousValues.email !== officer.email) {
+      changedFields.push("email");
+    }
+
+    if (
+      previousValues.departmentId?.toString() !==
+      officer.department?.toString()
+    ) {
+      changedFields.push("department");
+    }
+
+    const previousAreas = previousValues.assignedAreaIds
+      .map((id) => id.toString())
+      .sort();
+
+    const currentAreas = officer.assignedAreas
+      .map((id) => id.toString())
+      .sort();
+
+    if (
+      JSON.stringify(previousAreas) !==
+      JSON.stringify(currentAreas)
+    ) {
+      changedFields.push("assignedAreas");
+    }
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "officer.updated",
+      entityType: "User",
+      entityId: officer._id,
+      details: {
+        changedFields,
+        previous: {
+          name: previousValues.name,
+          email: previousValues.email,
+          departmentId: previousValues.departmentId,
+          assignedAreaIds: previousValues.assignedAreaIds,
+        },
+        current: {
+          name: officer.name,
+          email: officer.email,
+          departmentId: officer.department,
+          assignedAreaIds: officer.assignedAreas,
+        },
+      },
+    });
+
     const updatedOfficer = await User.findById(officer._id)
       .select("-password")
       .populate("department", "name categories")
@@ -443,8 +506,6 @@ const updateOfficerStatus = async (req, res) => {
     });
   }
 };
-
-
 
 module.exports = {
   getOfficers,
