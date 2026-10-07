@@ -5,6 +5,7 @@ const {
   getServiceAreaById,
     createServiceArea,
     updateServiceArea,
+    updateServiceAreaStatus,
 } = require("../controllers/admin.serviceArea.controller");
 
 const protect = require("../middleware/auth");
@@ -42,4 +43,12 @@ router.patch(
   requireRole("authority_admin", "super_admin"),
   updateServiceArea
 );
+
+router.patch(
+  "/:id/status",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  updateServiceAreaStatus
+);
+
 module.exports = router;

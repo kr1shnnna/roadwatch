@@ -480,9 +480,65 @@ const updateServiceArea = async (req, res) => {
 };
 
 
+
+
+const updateServiceAreaStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid service area ID.",
+      });
+    }
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean.",
+      });
+    }
+
+    const serviceArea = await ServiceArea.findById(id);
+
+    if (!serviceArea) {
+      return res.status(404).json({
+        success: false,
+        message: "Service area not found.",
+      });
+    }
+
+    serviceArea.isActive = isActive;
+
+    await serviceArea.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Service area ${
+        isActive ? "activated" : "deactivated"
+      } successfully.`,
+      serviceArea,
+    });
+  } catch (error) {
+    console.error(
+      "Update service area status error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update service area status.",
+    });
+  }
+};
+
+
 module.exports = {
   getServiceAreas,
   getServiceAreaById,
   createServiceArea,
     updateServiceArea,
+    updateServiceAreaStatus,
 };
