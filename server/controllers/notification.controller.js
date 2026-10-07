@@ -4,22 +4,96 @@ const Notification = require("../models/Notification");
 // GET /api/notifications
 const getMyNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({
+    let { page = 1, limit = 20, unread, type } = req.query;
+
+    page = Number(page);
+    limit = Number(limit);
+
+    // Validate pagination
+    if (!Number.isInteger(page) || page < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Page must be a positive integer.",
+      });
+    }
+
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be between 1 and 100.",
+      });
+    }
+
+    const filter = {
       recipient: req.user._id,
-    })
-      .populate(
-        "report",
-        "title category status"
-      )
-      .populate(
-        "assignment",
-        "status assignedAt"
-      )
-      .sort({ createdAt: -1 });
+    };
+
+    // Filter unread notifications
+    if (unread !== undefined) {
+      if (unread === "true") {
+        filter.isRead = false;
+      } else if (unread === "false") {
+        filter.isRead = true;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "unread must be true or false.",
+        });
+      }
+    }
+
+    // Filter by notification type
+    if (type) {
+      const allowedTypes = [
+        "report_assigned",
+        "report_resolved",
+        "report_confirmed",
+        "report_reopened",
+      ];
+
+      if (!allowedTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid notification type.",
+        });
+      }
+
+      filter.type = type;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [notifications, total] = await Promise.all([
+      Notification.find(filter)
+        .populate(
+          "report",
+          "title category status"
+        )
+        .populate(
+          "assignment",
+          "status assignedAt"
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      Notification.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
-      count: notifications.length,
+
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+
       notifications,
     });
   } catch (error) {
@@ -34,6 +108,7 @@ const getMyNotifications = async (req, res) => {
     });
   }
 };
+
 
 // GET /api/notifications/unread-count
 const getUnreadCount = async (req, res) => {
