@@ -348,10 +348,7 @@ const updateServiceArea = async (req, res) => {
     const { id } = req.params;
     const { name, city, boundary } = req.body;
 
-    // ----------------------------------------
     // Validate ID
-    // ----------------------------------------
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -359,10 +356,7 @@ const updateServiceArea = async (req, res) => {
       });
     }
 
-    // ----------------------------------------
     // Find service area
-    // ----------------------------------------
-
     const serviceArea = await ServiceArea.findById(id);
 
     if (!serviceArea) {
@@ -372,8 +366,17 @@ const updateServiceArea = async (req, res) => {
       });
     }
 
+    // Capture previous values
+    const previousValues = {
+      name: serviceArea.name,
+      city: serviceArea.city,
+      boundaryType: serviceArea.boundary?.type || null,
+      sourceProvider:
+        serviceArea.source?.provider || null,
+    };
+
     // ----------------------------------------
-    // Validate name
+    // Update name
     // ----------------------------------------
 
     if (name !== undefined) {
@@ -391,7 +394,7 @@ const updateServiceArea = async (req, res) => {
     }
 
     // ----------------------------------------
-    // Validate city
+    // Update city
     // ----------------------------------------
 
     if (city !== undefined) {
@@ -409,11 +412,11 @@ const updateServiceArea = async (req, res) => {
     }
 
     // ----------------------------------------
-    // Boundary update rules
+    // Update boundary
     // ----------------------------------------
 
     if (boundary !== undefined) {
-      // OSM geometry is managed by the importer.
+      // OSM geometry cannot be manually replaced
       if (
         serviceArea.source?.provider ===
         "openstreetmap"
@@ -431,7 +434,8 @@ const updateServiceArea = async (req, res) => {
       if (!boundaryValidation.valid) {
         return res.status(400).json({
           success: false,
-          message: boundaryValidation.message,
+          message:
+            boundaryValidation.message,
         });
       }
 
@@ -440,8 +444,6 @@ const updateServiceArea = async (req, res) => {
         coordinates: boundary.coordinates,
       };
 
-      // Keep manually managed service areas marked
-      // as RoadWatch-owned geometry.
       serviceArea.source = {
         provider: "roadwatch",
         osmType: null,
@@ -471,6 +473,70 @@ const updateServiceArea = async (req, res) => {
 
     await serviceArea.save();
 
+    // ----------------------------------------
+    // Determine changed fields
+    // ----------------------------------------
+
+    const changedFields = [];
+
+    if (previousValues.name !== serviceArea.name) {
+      changedFields.push("name");
+    }
+
+    if (previousValues.city !== serviceArea.city) {
+      changedFields.push("city");
+    }
+
+    const currentBoundaryType =
+      serviceArea.boundary?.type || null;
+
+    if (
+      previousValues.boundaryType !==
+      currentBoundaryType
+    ) {
+      changedFields.push("boundary");
+    }
+
+    if (
+      previousValues.sourceProvider !==
+      serviceArea.source?.provider
+    ) {
+      changedFields.push("source");
+    }
+
+    // ----------------------------------------
+    // Create audit log
+    // ----------------------------------------
+
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "service_area.updated",
+      entityType: "ServiceArea",
+      entityId: serviceArea._id,
+      details: {
+        changedFields,
+
+        previous: {
+          name: previousValues.name,
+          city: previousValues.city,
+          boundaryType:
+            previousValues.boundaryType,
+          sourceProvider:
+            previousValues.sourceProvider,
+        },
+
+        current: {
+          name: serviceArea.name,
+          city: serviceArea.city,
+          boundaryType:
+            serviceArea.boundary?.type || null,
+          sourceProvider:
+            serviceArea.source?.provider || null,
+        },
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: "Service area updated successfully.",
@@ -492,7 +558,8 @@ const updateServiceArea = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update service area.",
+      message:
+        "Failed to update service area.",
     });
   }
 };
