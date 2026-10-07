@@ -12,7 +12,7 @@ const adminRoutes = require("./routes/admin.routes");
 const adminReportRoutes = require("./routes/admin.report.routes");
 const adminOfficerRoutes = require("./routes/admin.officer.routes");
 const adminDepartmentRoutes = require("./routes/admin.department.routes");
-
+const adminServiceAreaRoutes = require("./routes/admin.serviceArea.routes");
 
 const app = express();
 
@@ -27,6 +27,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/reports", adminReportRoutes);
 app.use("/api/admin/officers", adminOfficerRoutes);
 app.use("/api/admin/departments", adminDepartmentRoutes);
+app.use("/api/admin/service-areas", adminServiceAreaRoutes);
 
 app.get("/", (req, res) => {
   res.json({
