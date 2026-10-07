@@ -4,6 +4,8 @@ const Department = require("../models/Department");
 
 const User = require("../models/User");
 
+const { createAuditLog } = require("../services/audit.service");
+
 const getDepartments = async (req, res) => {
   try {
     const { isActive } = req.query;
@@ -88,8 +90,6 @@ const getDepartmentById = async (req, res) => {
   }
 };
 
-
-
 const updateDepartment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,6 +111,12 @@ const updateDepartment = async (req, res) => {
       });
     }
 
+    // Capture previous values before making changes
+    const previousValues = {
+      categories: [...department.categories],
+      description: department.description,
+    };
+
     // Categories are optional, but if provided they must be an array
     if (categories !== undefined) {
       if (!Array.isArray(categories) || categories.length === 0) {
@@ -125,7 +131,10 @@ const updateDepartment = async (req, res) => {
 
     // Description is optional
     if (description !== undefined) {
-      if (description !== null && typeof description !== "string") {
+      if (
+        description !== null &&
+        typeof description !== "string"
+      ) {
         return res.status(400).json({
           success: false,
           message: "Description must be a string or null.",
@@ -139,6 +148,49 @@ const updateDepartment = async (req, res) => {
     }
 
     await department.save();
+
+    // Determine which fields changed
+    const changedFields = [];
+
+    const previousCategories = [...previousValues.categories]
+      .sort();
+
+    const currentCategories = [...department.categories]
+      .sort();
+
+    if (
+      JSON.stringify(previousCategories) !==
+      JSON.stringify(currentCategories)
+    ) {
+      changedFields.push("categories");
+    }
+
+    if (
+      previousValues.description !==
+      department.description
+    ) {
+      changedFields.push("description");
+    }
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "department.updated",
+      entityType: "Department",
+      entityId: department._id,
+      details: {
+        changedFields,
+        previous: {
+          categories: previousValues.categories,
+          description: previousValues.description,
+        },
+        current: {
+          categories: department.categories,
+          description: department.description,
+        },
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -162,7 +214,6 @@ const updateDepartment = async (req, res) => {
   }
 };
 
-
 const updateDepartmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -176,7 +227,7 @@ const updateDepartmentStatus = async (req, res) => {
       });
     }
 
-    // Validate isActive
+    // Validate status
     if (typeof isActive !== "boolean") {
       return res.status(400).json({
         success: false,
@@ -193,9 +244,25 @@ const updateDepartmentStatus = async (req, res) => {
       });
     }
 
+    // Capture previous status before changing it
+    const previousStatus = department.isActive;
+
     department.isActive = isActive;
 
     await department.save();
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "department.status_changed",
+      entityType: "Department",
+      entityId: department._id,
+      details: {
+        from: previousStatus,
+        to: department.isActive,
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -205,7 +272,10 @@ const updateDepartmentStatus = async (req, res) => {
       department,
     });
   } catch (error) {
-    console.error("Update department status error:", error);
+    console.error(
+      "Update department status error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
@@ -213,6 +283,7 @@ const updateDepartmentStatus = async (req, res) => {
     });
   }
 };
+
 
 
 module.exports = {
