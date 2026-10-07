@@ -163,8 +163,61 @@ const updateDepartment = async (req, res) => {
 };
 
 
+const updateDepartmentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    // Validate department ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid department ID.",
+      });
+    }
+
+    // Validate isActive
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean.",
+      });
+    }
+
+    const department = await Department.findById(id);
+
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        message: "Department not found.",
+      });
+    }
+
+    department.isActive = isActive;
+
+    await department.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Department ${
+        isActive ? "activated" : "deactivated"
+      } successfully.`,
+      department,
+    });
+  } catch (error) {
+    console.error("Update department status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update department status.",
+    });
+  }
+};
+
+
 module.exports = {
   getDepartments,
     getDepartmentById,
     updateDepartment,
+    updateDepartmentStatus,
 };
