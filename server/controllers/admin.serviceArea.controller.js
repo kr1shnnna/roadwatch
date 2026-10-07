@@ -325,8 +325,164 @@ const createServiceArea = async (req, res) => {
 };
 
 
+const updateServiceArea = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, city, boundary } = req.body;
+
+    // ----------------------------------------
+    // Validate ID
+    // ----------------------------------------
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid service area ID.",
+      });
+    }
+
+    // ----------------------------------------
+    // Find service area
+    // ----------------------------------------
+
+    const serviceArea = await ServiceArea.findById(id);
+
+    if (!serviceArea) {
+      return res.status(404).json({
+        success: false,
+        message: "Service area not found.",
+      });
+    }
+
+    // ----------------------------------------
+    // Validate name
+    // ----------------------------------------
+
+    if (name !== undefined) {
+      if (
+        typeof name !== "string" ||
+        !name.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Name must be a non-empty string.",
+        });
+      }
+
+      serviceArea.name = name.trim();
+    }
+
+    // ----------------------------------------
+    // Validate city
+    // ----------------------------------------
+
+    if (city !== undefined) {
+      if (
+        typeof city !== "string" ||
+        !city.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "City must be a non-empty string.",
+        });
+      }
+
+      serviceArea.city = city.trim();
+    }
+
+    // ----------------------------------------
+    // Boundary update rules
+    // ----------------------------------------
+
+    if (boundary !== undefined) {
+      // OSM geometry is managed by the importer.
+      if (
+        serviceArea.source?.provider ===
+        "openstreetmap"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "OSM-imported service area boundaries cannot be manually changed. Use the OSM import process to update the boundary.",
+        });
+      }
+
+      const boundaryValidation =
+        validateBoundary(boundary);
+
+      if (!boundaryValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: boundaryValidation.message,
+        });
+      }
+
+      serviceArea.boundary = {
+        type: boundary.type,
+        coordinates: boundary.coordinates,
+      };
+
+      // Keep manually managed service areas marked
+      // as RoadWatch-owned geometry.
+      serviceArea.source = {
+        provider: "roadwatch",
+        osmType: null,
+        osmId: null,
+        displayName: null,
+        url: null,
+      };
+    }
+
+    // ----------------------------------------
+    // Duplicate name + city check
+    // ----------------------------------------
+
+    const duplicate = await ServiceArea.findOne({
+      _id: { $ne: serviceArea._id },
+      name: serviceArea.name,
+      city: serviceArea.city,
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A service area with this name already exists in this city.",
+      });
+    }
+
+    await serviceArea.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Service area updated successfully.",
+      serviceArea,
+    });
+  } catch (error) {
+    console.error(
+      "Update service area error:",
+      error
+    );
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A service area with this name already exists in this city.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update service area.",
+    });
+  }
+};
+
+
 module.exports = {
   getServiceAreas,
   getServiceAreaById,
   createServiceArea,
+    updateServiceArea,
 };

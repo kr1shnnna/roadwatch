@@ -4,6 +4,7 @@ const {
   getServiceAreas,
   getServiceAreaById,
     createServiceArea,
+    updateServiceArea,
 } = require("../controllers/admin.serviceArea.controller");
 
 const protect = require("../middleware/auth");
@@ -34,4 +35,11 @@ router.post(
   createServiceArea
 );
 
+
+router.patch(
+  "/:id",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  updateServiceArea
+);
 module.exports = router;

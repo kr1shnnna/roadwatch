@@ -63,9 +63,11 @@ const serviceAreaSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 serviceAreaSchema.index({ boundary: "2dsphere" });
+
+serviceAreaSchema.index({ name: 1, city: 1 }, { unique: true });
 
 module.exports = mongoose.model("ServiceArea", serviceAreaSchema);
