@@ -1,6 +1,7 @@
 const Report = require("../models/Report");
 const { routeReport } = require("../services/routing.service");
 const Confirmation = require("../models/Confirmation");
+const { createNotification } = require("../services/notification.service");
 
 const createReport = async (req, res) => {
   try {
@@ -88,6 +89,27 @@ const createReport = async (req, res) => {
       routingResult = await routeReport(report);
     } catch (routingError) {
       console.error("Automatic routing failed:", routingError.message);
+    }
+
+    if (routingResult && routingResult.officer) {
+      await createNotification({
+        recipient: routingResult.officer._id,
+
+        type: "report_assigned",
+
+        title: "New report assigned",
+
+        message: `A new ${report.category.replace(
+          "_",
+          " ",
+        )} report has been assigned to you.`,
+
+        report: report._id,
+
+        assignment: routingResult.assignment?._id,
+
+        eventKey: `assignment:${routingResult.assignment._id}:assigned`,
+      });
     }
 
     // Return report + routing information
