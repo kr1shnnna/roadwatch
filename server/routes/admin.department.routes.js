@@ -2,6 +2,7 @@ const express = require("express");
 
 const {
   getDepartments,
+  getDepartmentById,
 } = require("../controllers/admin.department.controller");
 
 const protect = require("../middleware/auth");
@@ -15,5 +16,14 @@ router.get(
   requireRole("authority_admin", "super_admin"),
   getDepartments
 );
+
+
+router.get(
+  "/:id",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  getDepartmentById
+);
+
 
 module.exports = router;
