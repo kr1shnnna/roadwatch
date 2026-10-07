@@ -32,7 +32,6 @@ const getMyAssignments = async (req, res) => {
   }
 };
 
-
 const acceptAssignment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -47,14 +46,10 @@ const acceptAssignment = async (req, res) => {
     }
 
     // Make sure the assignment belongs to the logged-in officer
-    if (
-      assignment.officer.toString() !==
-      req.user._id.toString()
-    ) {
+    if (assignment.officer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You do not have permission to accept this assignment",
+        message: "You do not have permission to accept this assignment",
       });
     }
 
@@ -62,8 +57,7 @@ const acceptAssignment = async (req, res) => {
     if (assignment.status !== "assigned") {
       return res.status(400).json({
         success: false,
-        message:
-          `Assignment cannot be accepted because its current status is "${assignment.status}"`,
+        message: `Assignment cannot be accepted because its current status is "${assignment.status}"`,
       });
     }
 
@@ -76,15 +70,12 @@ const acceptAssignment = async (req, res) => {
     // Update corresponding report
     const Report = require("../models/Report");
 
-    const report = await Report.findById(
-      assignment.report
-    );
+    const report = await Report.findById(assignment.report);
 
     if (!report) {
       return res.status(404).json({
         success: false,
-        message:
-          "Assignment exists but the associated report was not found",
+        message: "Assignment exists but the associated report was not found",
       });
     }
 
@@ -92,8 +83,7 @@ const acceptAssignment = async (req, res) => {
     if (report.status !== "assigned") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be accepted because its current status is "${report.status}"`,
+        message: `Report cannot be accepted because its current status is "${report.status}"`,
       });
     }
 
@@ -120,7 +110,6 @@ const acceptAssignment = async (req, res) => {
   }
 };
 
-
 const startAssignment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -135,14 +124,10 @@ const startAssignment = async (req, res) => {
     }
 
     // Only the assigned officer can start the assignment
-    if (
-      assignment.officer.toString() !==
-      req.user._id.toString()
-    ) {
+    if (assignment.officer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You do not have permission to start this assignment",
+        message: "You do not have permission to start this assignment",
       });
     }
 
@@ -150,22 +135,18 @@ const startAssignment = async (req, res) => {
     if (assignment.status !== "accepted") {
       return res.status(400).json({
         success: false,
-        message:
-          `Assignment cannot be started because its current status is "${assignment.status}"`,
+        message: `Assignment cannot be started because its current status is "${assignment.status}"`,
       });
     }
 
     const Report = require("../models/Report");
 
-    const report = await Report.findById(
-      assignment.report
-    );
+    const report = await Report.findById(assignment.report);
 
     if (!report) {
       return res.status(404).json({
         success: false,
-        message:
-          "Assignment exists but the associated report was not found",
+        message: "Assignment exists but the associated report was not found",
       });
     }
 
@@ -173,8 +154,7 @@ const startAssignment = async (req, res) => {
     if (report.status !== "accepted") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be started because its current status is "${report.status}"`,
+        message: `Report cannot be started because its current status is "${report.status}"`,
       });
     }
 
@@ -213,11 +193,15 @@ const startAssignment = async (req, res) => {
   }
 };
 
-
 const resolveAssignment = async (req, res) => {
   try {
     const { id } = req.params;
     const { resolutionNote } = req.body;
+
+    const resolutionImages = (req.files || []).map((file) => ({
+      url: file.path,
+      publicId: file.filename,
+    }));
 
     if (!resolutionNote || !resolutionNote.trim()) {
       return res.status(400).json({
@@ -236,14 +220,10 @@ const resolveAssignment = async (req, res) => {
     }
 
     // Only the assigned officer can resolve it
-    if (
-      assignment.officer.toString() !==
-      req.user._id.toString()
-    ) {
+    if (assignment.officer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You do not have permission to resolve this assignment",
+        message: "You do not have permission to resolve this assignment",
       });
     }
 
@@ -251,22 +231,18 @@ const resolveAssignment = async (req, res) => {
     if (assignment.status !== "in_progress") {
       return res.status(400).json({
         success: false,
-        message:
-          `Assignment cannot be resolved because its current status is "${assignment.status}"`,
+        message: `Assignment cannot be resolved because its current status is "${assignment.status}"`,
       });
     }
 
     const Report = require("../models/Report");
 
-    const report = await Report.findById(
-      assignment.report
-    );
+    const report = await Report.findById(assignment.report);
 
     if (!report) {
       return res.status(404).json({
         success: false,
-        message:
-          "Assignment exists but the associated report was not found",
+        message: "Assignment exists but the associated report was not found",
       });
     }
 
@@ -274,8 +250,7 @@ const resolveAssignment = async (req, res) => {
     if (report.status !== "in_progress") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be resolved because its current status is "${report.status}"`,
+        message: `Report cannot be resolved because its current status is "${report.status}"`,
       });
     }
 
@@ -289,7 +264,8 @@ const resolveAssignment = async (req, res) => {
     report.status = "resolved";
 
     report.resolution = {
-      note: resolutionNote.trim(),
+      note: resolutionNote,
+      images: resolutionImages,
       resolvedBy: req.user._id,
       resolvedAt: new Date(),
     };
@@ -322,7 +298,6 @@ const resolveAssignment = async (req, res) => {
   }
 };
 
-
 const rejectAssignment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -346,14 +321,10 @@ const rejectAssignment = async (req, res) => {
     }
 
     // Only the assigned officer can reject it
-    if (
-      assignment.officer.toString() !==
-      req.user._id.toString()
-    ) {
+    if (assignment.officer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message:
-          "You do not have permission to reject this assignment",
+        message: "You do not have permission to reject this assignment",
       });
     }
 
@@ -361,22 +332,18 @@ const rejectAssignment = async (req, res) => {
     if (assignment.status !== "assigned") {
       return res.status(400).json({
         success: false,
-        message:
-          `Assignment cannot be rejected because its current status is "${assignment.status}"`,
+        message: `Assignment cannot be rejected because its current status is "${assignment.status}"`,
       });
     }
 
     const Report = require("../models/Report");
 
-    const report = await Report.findById(
-      assignment.report
-    );
+    const report = await Report.findById(assignment.report);
 
     if (!report) {
       return res.status(404).json({
         success: false,
-        message:
-          "Assignment exists but the associated report was not found",
+        message: "Assignment exists but the associated report was not found",
       });
     }
 
@@ -384,8 +351,7 @@ const rejectAssignment = async (req, res) => {
     if (report.status !== "assigned") {
       return res.status(400).json({
         success: false,
-        message:
-          `Report cannot be rejected because its current status is "${report.status}"`,
+        message: `Report cannot be rejected because its current status is "${report.status}"`,
       });
     }
 
@@ -425,11 +391,10 @@ const rejectAssignment = async (req, res) => {
   }
 };
 
-
 module.exports = {
   getMyAssignments,
-    acceptAssignment,
-    startAssignment,
-    resolveAssignment,
-    rejectAssignment,
+  acceptAssignment,
+  startAssignment,
+  resolveAssignment,
+  rejectAssignment,
 };
