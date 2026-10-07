@@ -193,7 +193,205 @@ const createOfficer = async (req, res) => {
   }
 };
 
+
+
+// GET /api/admin/officers/:id
+const getOfficerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid officer ID.",
+      });
+    }
+
+    const officer = await User.findOne({
+      _id: id,
+      role: "officer",
+    })
+      .select("-password")
+      .populate("department", "name categories")
+      .populate("assignedAreas", "name city");
+
+    if (!officer) {
+      return res.status(404).json({
+        success: false,
+        message: "Officer not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      officer,
+    });
+  } catch (error) {
+    console.error("Get officer by ID error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch officer.",
+    });
+  }
+};
+
+
+const updateOfficer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      email,
+      department,
+      assignedAreas,
+    } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid officer ID.",
+      });
+    }
+
+    const officer = await User.findOne({
+      _id: id,
+      role: "officer",
+    });
+
+    if (!officer) {
+      return res.status(404).json({
+        success: false,
+        message: "Officer not found.",
+      });
+    }
+
+    // Update name
+    if (name !== undefined) {
+      if (typeof name !== "string" || name.trim().length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Name must be at least 2 characters.",
+        });
+      }
+
+      officer.name = name.trim();
+    }
+
+    // Update email
+    if (email !== undefined) {
+      if (typeof email !== "string" || !email.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid email is required.",
+        });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const existingUser = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: officer._id },
+      });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "A user with this email already exists.",
+        });
+      }
+
+      officer.email = normalizedEmail;
+    }
+
+    // Update department
+    if (department !== undefined) {
+      if (!mongoose.Types.ObjectId.isValid(department)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid department ID.",
+        });
+      }
+
+      const departmentExists = await Department.findOne({
+        _id: department,
+        isActive: true,
+      });
+
+      if (!departmentExists) {
+        return res.status(404).json({
+          success: false,
+          message: "Active department not found.",
+        });
+      }
+
+      officer.department = department;
+    }
+
+    // Update service areas
+    if (assignedAreas !== undefined) {
+      if (!Array.isArray(assignedAreas)) {
+        return res.status(400).json({
+          success: false,
+          message: "assignedAreas must be an array.",
+        });
+      }
+
+      for (const areaId of assignedAreas) {
+        if (!mongoose.Types.ObjectId.isValid(areaId)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid service area ID: ${areaId}`,
+          });
+        }
+      }
+
+      if (assignedAreas.length > 0) {
+        const areaCount = await ServiceArea.countDocuments({
+          _id: { $in: assignedAreas },
+          isActive: true,
+        });
+
+        if (areaCount !== assignedAreas.length) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "One or more service areas are invalid or inactive.",
+          });
+        }
+      }
+
+      officer.assignedAreas = assignedAreas;
+    }
+
+    await officer.save();
+
+    const updatedOfficer = await User.findById(officer._id)
+      .select("-password")
+      .populate("department", "name categories")
+      .populate("assignedAreas", "name city");
+
+    return res.status(200).json({
+      success: true,
+      message: "Officer updated successfully.",
+      officer: updatedOfficer,
+    });
+  } catch (error) {
+    console.error("Update officer error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update officer.",
+    });
+  }
+};
+
+
+
+
 module.exports = {
   getOfficers,
   createOfficer,
+  getOfficerById,
+  updateOfficer,
 };

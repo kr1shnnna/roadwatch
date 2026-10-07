@@ -6,6 +6,8 @@ const requireRole = require("../middleware/role");
 const {
   getOfficers,
   createOfficer,
+  getOfficerById,
+  updateOfficer,
 } = require("../controllers/admin.officer.controller");
 
 const router = express.Router();
@@ -22,6 +24,21 @@ router.post(
   protect,
   requireRole("authority_admin", "super_admin"),
   createOfficer
+);
+
+router.get(
+  "/:id",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  getOfficerById
+);
+
+
+router.patch(
+  "/:id",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  updateOfficer
 );
 
 module.exports = router;
