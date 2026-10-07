@@ -2,38 +2,25 @@ const Report = require("../models/Report");
 const { routeReport } = require("../services/routing.service");
 const Confirmation = require("../models/Confirmation");
 
-
-
 const createReport = async (req, res) => {
   try {
-    let {
-      title,
-      description,
-      location,
-      category,
-      priority,
-    } = req.body;
+    let { title, description, location, category, priority } = req.body;
 
     // Validate required fields
     if (!title || !description || !location || !category) {
       return res.status(400).json({
         success: false,
-        message:
-          "Title, description, location, and category are required",
+        message: "Title, description, location, and category are required",
       });
     }
 
     // Parse location because multipart/form-data sends it as a string
     try {
-      location =
-        typeof location === "string"
-          ? JSON.parse(location)
-          : location;
+      location = typeof location === "string" ? JSON.parse(location) : location;
     } catch (error) {
       return res.status(400).json({
         success: false,
-        message:
-          "Location must be valid JSON with type and coordinates",
+        message: "Location must be valid JSON with type and coordinates",
       });
     }
 
@@ -45,15 +32,17 @@ const createReport = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Location must be a GeoJSON Point with [longitude, latitude]",
+        message: "Location must be a GeoJSON Point with [longitude, latitude]",
       });
     }
 
     const [longitude, latitude] = location.coordinates;
 
     // Validate coordinate ranges
-    if (!Number.isFinite(Number(longitude)) || !Number.isFinite(Number(latitude))) {
+    if (
+      !Number.isFinite(Number(longitude)) ||
+      !Number.isFinite(Number(latitude))
+    ) {
       return res.status(400).json({
         success: false,
         message: "Coordinates must be valid numbers",
@@ -73,10 +62,7 @@ const createReport = async (req, res) => {
     }
 
     // Normalize coordinates to numbers
-    location.coordinates = [
-      Number(longitude),
-      Number(latitude),
-    ];
+    location.coordinates = [Number(longitude), Number(latitude)];
 
     // Collect uploaded Cloudinary images
     const evidenceImages = (req.files || []).map((file) => ({
@@ -101,10 +87,7 @@ const createReport = async (req, res) => {
     try {
       routingResult = await routeReport(report);
     } catch (routingError) {
-      console.error(
-        "Automatic routing failed:",
-        routingError.message
-      );
+      console.error("Automatic routing failed:", routingError.message);
     }
 
     // Return report + routing information
@@ -163,8 +146,7 @@ const createReport = async (req, res) => {
               : null,
           }
         : {
-            message:
-              "Report created but automatic routing failed",
+            message: "Report created but automatic routing failed",
             serviceArea: null,
             department: null,
             officer: null,
@@ -180,7 +162,6 @@ const createReport = async (req, res) => {
     });
   }
 };
-
 
 const getMyReports = async (req, res) => {
   try {
@@ -430,6 +411,19 @@ const reopenReport = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const { reopenNote } = req.body;
+
+    const reopenImages = (req.files || []).map((file) => ({
+      url: file.path,
+      publicId: file.filename,
+    }));
+
+    if (!reopenNote || !reopenNote.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Reopen note is required.",
+      });
+    }
     const report = await Report.findById(id);
 
     if (!report) {
@@ -473,6 +467,13 @@ const reopenReport = async (req, res) => {
       report: report._id,
       user: req.user._id,
       type: "still_exists",
+    });
+
+    report.reopenHistory.push({
+      note: reopenNote.trim(),
+      images: reopenImages,
+      reopenedBy: req.user._id,
+      reopenedAt: new Date(),
     });
 
     // Mark the report as reopened before routing

@@ -31,7 +31,13 @@ router.get("/", getReports);
 
 router.patch("/:id/confirm", protect, requireRole("citizen"), confirmReport);
 
-router.patch("/:id/reopen", protect, requireRole("citizen"), reopenReport);
+router.patch(
+  "/:id/reopen",
+  protect,
+  requireRole("citizen"),
+  upload.array("images", 5),
+  reopenReport,
+);
 
 router.get("/:id", protect, requireRole("citizen"), getReportById);
 
