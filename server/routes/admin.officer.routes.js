@@ -8,6 +8,7 @@ const {
   createOfficer,
   getOfficerById,
   updateOfficer,
+  updateOfficerStatus,
 } = require("../controllers/admin.officer.controller");
 
 const router = express.Router();
@@ -40,5 +41,14 @@ router.patch(
   requireRole("authority_admin", "super_admin"),
   updateOfficer
 );
+
+
+router.patch(
+  "/:id/status",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  updateOfficerStatus
+);
+
 
 module.exports = router;

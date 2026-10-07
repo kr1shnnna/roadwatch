@@ -387,6 +387,63 @@ const updateOfficer = async (req, res) => {
 };
 
 
+const updateOfficerStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid officer ID.",
+      });
+    }
+
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean.",
+      });
+    }
+
+    const officer = await User.findOne({
+      _id: id,
+      role: "officer",
+    });
+
+    if (!officer) {
+      return res.status(404).json({
+        success: false,
+        message: "Officer not found.",
+      });
+    }
+
+    officer.isActive = isActive;
+
+    await officer.save();
+
+    const updatedOfficer = await User.findById(officer._id)
+      .select("-password")
+      .populate("department", "name categories")
+      .populate("assignedAreas", "name city");
+
+    return res.status(200).json({
+      success: true,
+      message: `Officer ${
+        isActive ? "activated" : "deactivated"
+      } successfully.`,
+      officer: updatedOfficer,
+    });
+  } catch (error) {
+    console.error("Update officer status error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update officer status.",
+    });
+  }
+};
+
 
 
 module.exports = {
@@ -394,4 +451,5 @@ module.exports = {
   createOfficer,
   getOfficerById,
   updateOfficer,
+  updateOfficerStatus,
 };
