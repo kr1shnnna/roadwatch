@@ -2,6 +2,7 @@ const Report = require("../models/Report");
 const { routeReport } = require("../services/routing.service");
 const Confirmation = require("../models/Confirmation");
 const { createNotification } = require("../services/notification.service");
+const { createAuditLog } = require("../services/audit.service");
 
 const createReport = async (req, res) => {
   try {
@@ -410,24 +411,33 @@ const confirmReport = async (req, res) => {
 
     await report.save();
 
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "report.confirmed",
+      entityType: "Report",
+      entityId: report._id,
+      details: {
+        confirmationType: "resolved",
+      },
+    });
 
     if (report.assignedTo) {
-  await createNotification({
-    recipient: report.assignedTo,
+      await createNotification({
+        recipient: report.assignedTo,
 
-    type: "report_confirmed",
+        type: "report_confirmed",
 
-    title: "Report confirmed",
+        title: "Report confirmed",
 
-    message:
-      "The citizen has confirmed that the reported issue has been resolved.",
+        message:
+          "The citizen has confirmed that the reported issue has been resolved.",
 
-    report: report._id,
+        report: report._id,
 
-    eventKey: `report:${report._id}:confirmed`,
-  });
-}
-
+        eventKey: `report:${report._id}:confirmed`,
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -448,10 +458,11 @@ const confirmReport = async (req, res) => {
   }
 };
 
+
+
 const reopenReport = async (req, res) => {
   try {
     const { id } = req.params;
-
     const { reopenNote } = req.body;
 
     const reopenImages = (req.files || []).map((file) => ({
@@ -465,6 +476,7 @@ const reopenReport = async (req, res) => {
         message: "Reopen note is required.",
       });
     }
+
     const report = await Report.findById(id);
 
     if (!report) {
@@ -499,7 +511,8 @@ const reopenReport = async (req, res) => {
     if (existingConfirmation) {
       return res.status(400).json({
         success: false,
-        message: "You have already submitted a verification for this report.",
+        message:
+          "You have already submitted a verification for this report.",
       });
     }
 
@@ -529,34 +542,81 @@ const reopenReport = async (req, res) => {
     try {
       routingResult = await routeReport(report);
     } catch (routingError) {
-      console.error("Reopened report routing failed:", routingError.message);
+      console.error(
+        "Reopened report routing failed:",
+        routingError.message
+      );
+
+      // The report was successfully reopened even though
+      // automatic reassignment failed, so record the audit event.
+      await createAuditLog({
+        req,
+        actor: req.user,
+        action: "report.reopened",
+        entityType: "Report",
+        entityId: report._id,
+        details: {
+          reopenReason: reopenNote.trim(),
+          confirmationId: confirmation._id,
+          newAssignmentId: null,
+          newOfficerId: null,
+          serviceAreaId: null,
+          departmentId: null,
+          routingStatus: "failed",
+        },
+      });
 
       return res.status(500).json({
         success: false,
-        message: "Report was reopened, but automatic reassignment failed.",
+        message:
+          "Report was reopened, but automatic reassignment failed.",
         confirmation,
       });
     }
 
-    if (routingResult && routingResult.officer) {
-  await createNotification({
-    recipient: routingResult.officer._id,
+    // Create audit log after successful routing
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "report.reopened",
+      entityType: "Report",
+      entityId: report._id,
+      details: {
+        reopenReason: reopenNote.trim(),
+        confirmationId: confirmation._id,
+        newAssignmentId:
+          routingResult.assignment?._id || null,
+        newOfficerId:
+          routingResult.officer?._id || null,
+        serviceAreaId:
+          routingResult.serviceArea?._id || null,
+        departmentId:
+          routingResult.department?._id || null,
+        routingStatus: routingResult.officer
+          ? "reassigned"
+          : "no_eligible_officer",
+      },
+    });
 
-    type: "report_reopened",
+    // Notify newly assigned officer
+    if (routingResult.officer) {
+      await createNotification({
+        recipient: routingResult.officer._id,
 
-    title: "Report reopened",
+        type: "report_reopened",
 
-    message:
-      "A citizen has reopened a previously resolved report. Please review the issue again.",
+        title: "Report reopened",
 
-    report: report._id,
+        message:
+          "A citizen has reopened a previously resolved report. Please review the issue again.",
 
-    assignment: routingResult.assignment?._id,
+        report: report._id,
 
-    eventKey: `assignment:${routingResult.assignment._id}:reopened`,
-  });
-}
+        assignment: routingResult.assignment?._id,
 
+        eventKey: `assignment:${routingResult.assignment._id}:reopened`,
+      });
+    }
 
     // Re-fetch the report so the response contains the latest state
     const updatedReport = await Report.findById(report._id)

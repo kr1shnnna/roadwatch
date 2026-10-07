@@ -565,13 +565,12 @@ const updateServiceArea = async (req, res) => {
 };
 
 
-
-
 const updateServiceAreaStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive } = req.body;
 
+    // Validate service area ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -579,6 +578,7 @@ const updateServiceAreaStatus = async (req, res) => {
       });
     }
 
+    // Validate status
     if (typeof isActive !== "boolean") {
       return res.status(400).json({
         success: false,
@@ -595,9 +595,26 @@ const updateServiceAreaStatus = async (req, res) => {
       });
     }
 
+    // Capture previous status
+    const previousStatus = serviceArea.isActive;
+
+    // Update status
     serviceArea.isActive = isActive;
 
     await serviceArea.save();
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "service_area.status_changed",
+      entityType: "ServiceArea",
+      entityId: serviceArea._id,
+      details: {
+        from: previousStatus,
+        to: serviceArea.isActive,
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -618,6 +635,7 @@ const updateServiceAreaStatus = async (req, res) => {
     });
   }
 };
+
 
 
 module.exports = {
