@@ -361,7 +361,8 @@ const reassignReport = async (req, res) => {
     if (!report.assignedTo) {
       return res.status(400).json({
         success: false,
-        message: "Report is not currently assigned. Use the assign endpoint.",
+        message:
+          "Report is not currently assigned. Use the assign endpoint.",
       });
     }
 
@@ -386,7 +387,8 @@ const reassignReport = async (req, res) => {
     if (!department) {
       return res.status(400).json({
         success: false,
-        message: "No active department supports this report category.",
+        message:
+          "No active department supports this report category.",
       });
     }
 
@@ -421,13 +423,15 @@ const reassignReport = async (req, res) => {
     }
 
     const officerHandlesArea = officer.assignedAreas.some(
-      (areaId) => areaId.toString() === serviceArea._id.toString(),
+      (areaId) =>
+        areaId.toString() === serviceArea._id.toString()
     );
 
     if (!officerHandlesArea) {
       return res.status(400).json({
         success: false,
-        message: "Officer is not assigned to this service area.",
+        message:
+          "Officer is not assigned to this service area.",
       });
     }
 
@@ -440,10 +444,14 @@ const reassignReport = async (req, res) => {
       },
     }).sort({ createdAt: -1 });
 
+    // Store previous officer before changing the report
+    const previousOfficerId = report.assignedTo;
+
     // Close the previous assignment
     if (currentAssignment) {
       currentAssignment.status = "rejected";
-      currentAssignment.rejectionReason = `Reassigned by admin: ${reason.trim()}`;
+      currentAssignment.rejectionReason =
+        `Reassigned by admin: ${reason.trim()}`;
 
       await currentAssignment.save();
     }
@@ -463,6 +471,25 @@ const reassignReport = async (req, res) => {
 
     await report.save();
 
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "report.reassigned",
+      entityType: "Report",
+      entityId: report._id,
+      details: {
+        previousOfficerId,
+        newOfficerId: officer._id,
+        departmentId: department._id,
+        serviceAreaId: serviceArea._id,
+        previousAssignmentId:
+          currentAssignment?._id || null,
+        newAssignmentId: newAssignment._id,
+        reason: reason.trim(),
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: "Report reassigned successfully.",
@@ -479,6 +506,7 @@ const reassignReport = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   getAdminReports,
