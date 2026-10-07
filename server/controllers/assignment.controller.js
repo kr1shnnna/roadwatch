@@ -4,6 +4,9 @@ const {
 } = require("../services/notification.service");
 
 
+const { createAuditLog } = require("../services/audit.service");
+
+
 const getMyAssignments = async (req, res) => {
   try {
     const assignments = await Assignment.find({
@@ -79,7 +82,8 @@ const acceptAssignment = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: "Assignment exists but the associated report was not found",
+        message:
+          "Assignment exists but the associated report was not found",
       });
     }
 
@@ -94,6 +98,19 @@ const acceptAssignment = async (req, res) => {
     report.status = "accepted";
 
     await report.save();
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "assignment.accepted",
+      entityType: "Assignment",
+      entityId: assignment._id,
+      details: {
+        reportId: report._id,
+        officerId: assignment.officer,
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -113,6 +130,9 @@ const acceptAssignment = async (req, res) => {
     });
   }
 };
+
+
+
 
 const startAssignment = async (req, res) => {
   try {
@@ -150,7 +170,8 @@ const startAssignment = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: "Assignment exists but the associated report was not found",
+        message:
+          "Assignment exists but the associated report was not found",
       });
     }
 
@@ -171,6 +192,19 @@ const startAssignment = async (req, res) => {
     report.status = "in_progress";
 
     await report.save();
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "assignment.started",
+      entityType: "Assignment",
+      entityId: assignment._id,
+      details: {
+        reportId: report._id,
+        officerId: assignment.officer,
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -246,7 +280,8 @@ const resolveAssignment = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: "Assignment exists but the associated report was not found",
+        message:
+          "Assignment exists but the associated report was not found",
       });
     }
 
@@ -268,7 +303,7 @@ const resolveAssignment = async (req, res) => {
     report.status = "resolved";
 
     report.resolution = {
-      note: resolutionNote,
+      note: resolutionNote.trim(),
       images: resolutionImages,
       resolvedBy: req.user._id,
       resolvedAt: new Date(),
@@ -276,24 +311,37 @@ const resolveAssignment = async (req, res) => {
 
     await report.save();
 
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "assignment.resolved",
+      entityType: "Assignment",
+      entityId: assignment._id,
+      details: {
+        reportId: report._id,
+        officerId: assignment.officer,
+        resolutionNote: resolutionNote.trim(),
+      },
+    });
 
-
+    // Notify reporting citizen
     await createNotification({
-  recipient: report.reportedBy,
+      recipient: report.reportedBy,
 
-  type: "report_resolved",
+      type: "report_resolved",
 
-  title: "Report resolved",
+      title: "Report resolved",
 
-  message:
-    "Your reported issue has been marked as resolved. Please verify the resolution.",
+      message:
+        "Your reported issue has been marked as resolved. Please verify the resolution.",
 
-  report: report._id,
+      report: report._id,
 
-  assignment: assignment._id,
+      assignment: assignment._id,
 
-  eventKey: `assignment:${assignment._id}:resolved`,
-});
+      eventKey: `assignment:${assignment._id}:resolved`,
+    });
 
     return res.status(200).json({
       success: true,
@@ -321,6 +369,7 @@ const resolveAssignment = async (req, res) => {
   }
 };
 
+
 const rejectAssignment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -347,7 +396,8 @@ const rejectAssignment = async (req, res) => {
     if (assignment.officer.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
-        message: "You do not have permission to reject this assignment",
+        message:
+          "You do not have permission to reject this assignment",
       });
     }
 
@@ -366,7 +416,8 @@ const rejectAssignment = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: "Assignment exists but the associated report was not found",
+        message:
+          "Assignment exists but the associated report was not found",
       });
     }
 
@@ -388,6 +439,20 @@ const rejectAssignment = async (req, res) => {
     report.status = "rejected";
 
     await report.save();
+
+    // Create audit log
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "assignment.rejected",
+      entityType: "Assignment",
+      entityId: assignment._id,
+      details: {
+        reportId: report._id,
+        officerId: assignment.officer,
+        reason: reason.trim(),
+      },
+    });
 
     return res.status(200).json({
       success: true,
@@ -413,6 +478,7 @@ const rejectAssignment = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   getMyAssignments,
