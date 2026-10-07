@@ -1,4 +1,3 @@
-
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 
@@ -14,71 +13,48 @@ const seedData = async () => {
   try {
     await connectDB();
 
-    // 1. Create/find Road Maintenance department
-    let department = await Department.findOne({
+    // ----------------------------------------
+    // 1. Find existing department
+    // ----------------------------------------
+
+    const department = await Department.findOne({
       name: "Road Maintenance",
+      isActive: true,
     });
 
     if (!department) {
-      department = await Department.create({
-        name: "Road Maintenance",
-        categories: [
-          "pothole",
-          "broken_road",
-          "road_debris",
-          "road_sign",
-        ],
-        description:
-          "Responsible for road conditions, potholes, road debris, and road signs.",
-        isActive: true,
-      });
-
-      console.log("Road Maintenance department created");
-    } else {
-      console.log("Road Maintenance department already exists");
+      throw new Error(
+        "Road Maintenance department not found. Run: npm run seed:departments"
+      );
     }
 
-    // 2. Create/find Knowledge Park service area
-    let serviceArea = await ServiceArea.findOne({
-      name: "Knowledge Park",
+    // ----------------------------------------
+    // 2. Find existing service area
+    // ----------------------------------------
+
+    const serviceArea = await ServiceArea.findOne({
+      name: "Knowledge Park II",
       city: "Greater Noida",
     });
 
     if (!serviceArea) {
-      serviceArea = await ServiceArea.create({
-        name: "Knowledge Park",
-        city: "Greater Noida",
-        boundary: {
-          type: "Polygon",
-          coordinates: [
-            [
-              [77.375, 28.445],
-              [77.405, 28.445],
-              [77.405, 28.475],
-              [77.375, 28.475],
-              [77.375, 28.445],
-            ],
-          ],
-        },
-        isActive: true,
-      });
-
-      console.log("Knowledge Park service area created");
-    } else {
-      console.log("Knowledge Park service area already exists");
+      throw new Error(
+        "Knowledge Park I service area not found. Run: npm run import:service-areas"
+      );
     }
 
-    // 3. Create/find test officer
+    // ----------------------------------------
+    // 3. Create/update demo officer
+    // ----------------------------------------
+
     const officerEmail = "officer@roadwatch.test";
 
     let officer = await User.findOne({
       email: officerEmail,
     });
 
-    const hashedOfficerPassword = await bcrypt.hash(
-      "Officer@123",
-      12
-    );
+    const hashedOfficerPassword =
+      await bcrypt.hash("Officer@123", 12);
 
     if (!officer) {
       officer = await User.create({
@@ -105,17 +81,18 @@ const seedData = async () => {
       );
     }
 
-    // 4. Create/find demo authority admin
+    // ----------------------------------------
+    // 4. Create/update demo admin
+    // ----------------------------------------
+
     const adminEmail = "admin@roadwatch.test";
 
     let admin = await User.findOne({
       email: adminEmail,
     });
 
-    const hashedAdminPassword = await bcrypt.hash(
-      "Admin@123",
-      12
-    );
+    const hashedAdminPassword =
+      await bcrypt.hash("Admin@123", 12);
 
     if (!admin) {
       admin = await User.create({
@@ -133,18 +110,50 @@ const seedData = async () => {
 
       await admin.save();
 
-      console.log("Demo authority admin already exists");
+      console.log(
+        "Demo authority admin already exists"
+      );
     }
+
+    // ----------------------------------------
+    // Final output
+    // ----------------------------------------
 
     console.log("\nSeed completed successfully:");
     console.log("--------------------------------");
-    console.log("Department:", department.name);
-    console.log("Service Area:", serviceArea.name);
-    console.log("Officer:", officer.name);
-    console.log("Officer Email:", officer.email);
-    console.log("Admin:", admin.name);
-    console.log("Admin Email:", admin.email);
+
+    console.log(
+      "Department:",
+      department.name
+    );
+
+    console.log(
+      "Service Area:",
+      serviceArea.name
+    );
+
+    console.log(
+      "Officer:",
+      officer.name
+    );
+
+    console.log(
+      "Officer Email:",
+      officer.email
+    );
+
+    console.log(
+      "Admin:",
+      admin.name
+    );
+
+    console.log(
+      "Admin Email:",
+      admin.email
+    );
+
     console.log("--------------------------------");
+    console.log("Demo Officer Password: Officer@123");
     console.log("Demo Admin Password: Admin@123");
     console.log("--------------------------------");
 

@@ -19,14 +19,42 @@ const serviceAreaSchema = new mongoose.Schema(
     boundary: {
       type: {
         type: String,
-        enum: ["Polygon"],
+        enum: ["Polygon", "MultiPolygon"],
         required: true,
         default: "Polygon",
       },
 
       coordinates: {
-        type: [[[Number]]],
+        type: mongoose.Schema.Types.Mixed,
         required: true,
+      },
+    },
+
+    source: {
+      provider: {
+        type: String,
+        default: "openstreetmap",
+      },
+
+      osmType: {
+        type: String,
+        enum: ["node", "way", "relation"],
+        default: null,
+      },
+
+      osmId: {
+        type: String,
+        default: null,
+      },
+
+      displayName: {
+        type: String,
+        default: null,
+      },
+
+      url: {
+        type: String,
+        default: null,
       },
     },
 
@@ -35,19 +63,9 @@ const serviceAreaSchema = new mongoose.Schema(
       default: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Geospatial index
-serviceAreaSchema.index({
-  boundary: "2dsphere",
-});
+serviceAreaSchema.index({ boundary: "2dsphere" });
 
-const ServiceArea = mongoose.model(
-  "ServiceArea",
-  serviceAreaSchema
-);
-
-module.exports = ServiceArea;
+module.exports = mongoose.model("ServiceArea", serviceAreaSchema);

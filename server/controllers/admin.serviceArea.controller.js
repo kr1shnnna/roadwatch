@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const ServiceArea = require("../models/ServiceArea");
 
+const User = require("../models/User");
+
 const getServiceAreas = async (req, res) => {
   try {
     const { isActive, city } = req.query;
@@ -52,6 +54,279 @@ const getServiceAreas = async (req, res) => {
   }
 };
 
+
+const getServiceAreaById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate service area ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid service area ID.",
+      });
+    }
+
+    const serviceArea = await ServiceArea.findById(id).lean();
+
+    if (!serviceArea) {
+      return res.status(404).json({
+        success: false,
+        message: "Service area not found.",
+      });
+    }
+
+    // Find officers assigned to this service area
+    const officers = await User.find({
+      role: "officer",
+      assignedAreas: serviceArea._id,
+    })
+      .select("name email department assignedAreas isActive createdAt")
+      .populate("department", "name categories")
+      .sort({ name: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      serviceArea: {
+        ...serviceArea,
+        officers,
+        officerCount: officers.length,
+      },
+    });
+  } catch (error) {
+    console.error("Get service area by ID error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch service area.",
+    });
+  }
+};
+
+
+const isValidCoordinate = (coordinate) => {
+  return (
+    Array.isArray(coordinate) &&
+    coordinate.length === 2 &&
+    Number.isFinite(coordinate[0]) &&
+    Number.isFinite(coordinate[1]) &&
+    coordinate[0] >= -180 &&
+    coordinate[0] <= 180 &&
+    coordinate[1] >= -90 &&
+    coordinate[1] <= 90
+  );
+};
+
+const isValidRing = (ring) => {
+  if (!Array.isArray(ring) || ring.length < 4) {
+    return false;
+  }
+
+  if (!ring.every(isValidCoordinate)) {
+    return false;
+  }
+
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+
+  return (
+    first[0] === last[0] &&
+    first[1] === last[1]
+  );
+};
+
+const isValidPolygonCoordinates = (coordinates) => {
+  return (
+    Array.isArray(coordinates) &&
+    coordinates.length > 0 &&
+    coordinates.every(isValidRing)
+  );
+};
+
+const isValidMultiPolygonCoordinates = (coordinates) => {
+  return (
+    Array.isArray(coordinates) &&
+    coordinates.length > 0 &&
+    coordinates.every(
+      (polygon) =>
+        Array.isArray(polygon) &&
+        polygon.length > 0 &&
+        polygon.every(isValidRing)
+    )
+  );
+};
+
+const validateBoundary = (boundary) => {
+  if (!boundary || typeof boundary !== "object") {
+    return {
+      valid: false,
+      message: "Boundary is required.",
+    };
+  }
+
+  if (
+    boundary.type !== "Polygon" &&
+    boundary.type !== "MultiPolygon"
+  ) {
+    return {
+      valid: false,
+      message: "Boundary type must be Polygon or MultiPolygon.",
+    };
+  }
+
+  if (!Array.isArray(boundary.coordinates)) {
+    return {
+      valid: false,
+      message: "Boundary coordinates must be an array.",
+    };
+  }
+
+  if (boundary.type === "Polygon") {
+    if (!isValidPolygonCoordinates(boundary.coordinates)) {
+      return {
+        valid: false,
+        message: "Invalid Polygon coordinates.",
+      };
+    }
+  }
+
+  if (boundary.type === "MultiPolygon") {
+    if (!isValidMultiPolygonCoordinates(boundary.coordinates)) {
+      return {
+        valid: false,
+        message: "Invalid MultiPolygon coordinates.",
+      };
+    }
+  }
+
+  return {
+    valid: true,
+  };
+};
+
+
+const createServiceArea = async (req, res) => {
+  try {
+    const {
+      name,
+      city,
+      boundary,
+    } = req.body;
+
+    // ----------------------------------------
+    // Validate name
+    // ----------------------------------------
+
+    if (
+      !name ||
+      typeof name !== "string" ||
+      !name.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Service area name is required.",
+      });
+    }
+
+    // ----------------------------------------
+    // Validate city
+    // ----------------------------------------
+
+    if (
+      !city ||
+      typeof city !== "string" ||
+      !city.trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "City is required.",
+      });
+    }
+
+    // ----------------------------------------
+    // Validate boundary
+    // ----------------------------------------
+
+    const boundaryValidation =
+      validateBoundary(boundary);
+
+    if (!boundaryValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: boundaryValidation.message,
+      });
+    }
+
+    // ----------------------------------------
+    // Duplicate service area check
+    // ----------------------------------------
+
+    const existingServiceArea =
+      await ServiceArea.findOne({
+        name: name.trim(),
+        city: city.trim(),
+      });
+
+    if (existingServiceArea) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A service area with this name already exists in this city.",
+      });
+    }
+
+    // ----------------------------------------
+    // Create service area
+    // ----------------------------------------
+
+    const serviceArea = await ServiceArea.create({
+      name: name.trim(),
+      city: city.trim(),
+      boundary: {
+        type: boundary.type,
+        coordinates: boundary.coordinates,
+      },
+      source: {
+        provider: "roadwatch",
+        osmType: null,
+        osmId: null,
+        displayName: null,
+        url: null,
+      },
+      isActive: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Service area created successfully.",
+      serviceArea,
+    });
+  } catch (error) {
+    console.error(
+      "Create service area error:",
+      error
+    );
+
+    // Handle MongoDB duplicate-key race condition
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "A service area with this name already exists in this city.",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create service area.",
+    });
+  }
+};
+
+
 module.exports = {
   getServiceAreas,
+  getServiceAreaById,
+  createServiceArea,
 };
