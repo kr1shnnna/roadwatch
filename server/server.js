@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth.routes");
 const reportRoutes = require("./routes/report.routes");
 const assignmentRoutes = require("./routes/assignment.routes");
 const notificationRoutes = require("./routes/notification.routes");
+const adminRoutes = require("./routes/admin.routes");
 const app = express();
 
 // Database
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 // Test route
