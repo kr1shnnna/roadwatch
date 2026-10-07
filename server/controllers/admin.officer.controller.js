@@ -361,8 +361,7 @@ const updateOfficer = async (req, res) => {
         if (areaCount !== assignedAreas.length) {
           return res.status(400).json({
             success: false,
-            message:
-              "One or more service areas are invalid or inactive.",
+            message: "One or more service areas are invalid or inactive.",
           });
         }
       }
@@ -384,8 +383,7 @@ const updateOfficer = async (req, res) => {
     }
 
     if (
-      previousValues.departmentId?.toString() !==
-      officer.department?.toString()
+      previousValues.departmentId?.toString() !== officer.department?.toString()
     ) {
       changedFields.push("department");
     }
@@ -398,10 +396,7 @@ const updateOfficer = async (req, res) => {
       .map((id) => id.toString())
       .sort();
 
-    if (
-      JSON.stringify(previousAreas) !==
-      JSON.stringify(currentAreas)
-    ) {
+    if (JSON.stringify(previousAreas) !== JSON.stringify(currentAreas)) {
       changedFields.push("assignedAreas");
     }
 
@@ -449,7 +444,6 @@ const updateOfficer = async (req, res) => {
   }
 };
 
-
 const updateOfficerStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -484,6 +478,18 @@ const updateOfficerStatus = async (req, res) => {
     officer.isActive = isActive;
 
     await officer.save();
+
+    await createAuditLog({
+      req,
+      actor: req.user,
+      action: "officer.status_changed",
+      entityType: "User",
+      entityId: officer._id,
+      details: {
+        from: previousStatus,
+        to: officer.isActive,
+      },
+    });
 
     const updatedOfficer = await User.findById(officer._id)
       .select("-password")
