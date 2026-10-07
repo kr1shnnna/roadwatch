@@ -1,5 +1,22 @@
 const mongoose = require("mongoose");
 
+const imageSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      required: true,
+    },
+
+    publicId: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
 const reportSchema = new mongoose.Schema(
   {
     title: {
@@ -83,26 +100,65 @@ const reportSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Original evidence uploaded by the citizen
+    evidenceImages: {
+      type: [imageSchema],
+      default: [],
+    },
+
+    // Officer resolution evidence
     resolution: {
-  note: {
-    type: String,
-    trim: true,
-    maxlength: 1000,
-    default: null,
-  },
+      note: {
+        type: String,
+        trim: true,
+        maxlength: 1000,
+        default: null,
+      },
 
-  resolvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
+      images: {
+        type: [imageSchema],
+        default: [],
+      },
 
-  resolvedAt: {
-    type: Date,
-    default: null,
-  },
-},
+      resolvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
 
+      resolvedAt: {
+        type: Date,
+        default: null,
+      },
+    },
+
+    // History of citizen reopen actions
+    reopenHistory: [
+      {
+        note: {
+          type: String,
+          trim: true,
+          maxlength: 1000,
+          default: null,
+        },
+
+        images: {
+          type: [imageSchema],
+          default: [],
+        },
+
+        reopenedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+
+        reopenedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
