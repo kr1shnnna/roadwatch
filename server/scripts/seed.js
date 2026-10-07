@@ -1,3 +1,4 @@
+
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
 
@@ -74,7 +75,7 @@ const seedData = async () => {
       email: officerEmail,
     });
 
-    const hashedPassword = await bcrypt.hash(
+    const hashedOfficerPassword = await bcrypt.hash(
       "Officer@123",
       12
     );
@@ -83,7 +84,7 @@ const seedData = async () => {
       officer = await User.create({
         name: "RoadWatch Officer",
         email: officerEmail,
-        password: hashedPassword,
+        password: hashedOfficerPassword,
         role: "officer",
         department: department._id,
         assignedAreas: [serviceArea._id],
@@ -99,7 +100,40 @@ const seedData = async () => {
 
       await officer.save();
 
-      console.log("Test officer already exists — assignment updated");
+      console.log(
+        "Test officer already exists — assignment updated"
+      );
+    }
+
+    // 4. Create/find demo authority admin
+    const adminEmail = "admin@roadwatch.test";
+
+    let admin = await User.findOne({
+      email: adminEmail,
+    });
+
+    const hashedAdminPassword = await bcrypt.hash(
+      "Admin@123",
+      12
+    );
+
+    if (!admin) {
+      admin = await User.create({
+        name: "RoadWatch Admin",
+        email: adminEmail,
+        password: hashedAdminPassword,
+        role: "authority_admin",
+        isActive: true,
+      });
+
+      console.log("Demo authority admin created");
+    } else {
+      admin.role = "authority_admin";
+      admin.isActive = true;
+
+      await admin.save();
+
+      console.log("Demo authority admin already exists");
     }
 
     console.log("\nSeed completed successfully:");
@@ -108,6 +142,10 @@ const seedData = async () => {
     console.log("Service Area:", serviceArea.name);
     console.log("Officer:", officer.name);
     console.log("Officer Email:", officer.email);
+    console.log("Admin:", admin.name);
+    console.log("Admin Email:", admin.email);
+    console.log("--------------------------------");
+    console.log("Demo Admin Password: Admin@123");
     console.log("--------------------------------");
 
     process.exit(0);
