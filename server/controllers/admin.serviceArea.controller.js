@@ -4,6 +4,8 @@ const ServiceArea = require("../models/ServiceArea");
 
 const User = require("../models/User");
 
+const { createAuditLog } = require("../services/audit.service");
+
 const getServiceAreas = async (req, res) => {
   try {
     const { isActive, city } = req.query;
@@ -296,6 +298,22 @@ const createServiceArea = async (req, res) => {
       },
       isActive: true,
     });
+
+
+    await createAuditLog({
+  req,
+  actor: req.user,
+  action: "service_area.created",
+  entityType: "ServiceArea",
+  entityId: serviceArea._id,
+  details: {
+    name: serviceArea.name,
+    city: serviceArea.city,
+    boundaryType: serviceArea.boundary.type,
+    sourceProvider: serviceArea.source?.provider || "roadwatch",
+  },
+});
+
 
     return res.status(201).json({
       success: true,
