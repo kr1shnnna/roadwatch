@@ -1,6 +1,6 @@
 const Report = require("../models/Report");
 const User = require("../models/User");
-
+const Department = require("../models/Department");
 const REPORT_STATUSES = [
   "reported",
   "verified",
@@ -443,7 +443,267 @@ const getOfficerAnalytics = async (req, res) => {
 };
 
 
+
+
+const getDepartmentAnalytics = async (req, res) => {
+  try {
+    const departmentStats = await Department.aggregate([
+      {
+        $lookup: {
+          from: "assignments",
+          let: {
+            departmentId: "$_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    "$department",
+                    "$$departmentId",
+                  ],
+                },
+              },
+            },
+
+            {
+              $group: {
+                _id: null,
+
+                totalAssignments: {
+                  $sum: 1,
+                },
+
+                activeAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: [
+                          "$status",
+                          [
+                            "assigned",
+                            "accepted",
+                            "in_progress",
+                          ],
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                completedAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: [
+                          "$status",
+                          "completed",
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                rejectedAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: [
+                          "$status",
+                          "rejected",
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                averageResolutionTimeMs: {
+                  $avg: {
+                    $cond: [
+                      {
+                        $and: [
+                          {
+                            $ne: [
+                              "$assignedAt",
+                              null,
+                            ],
+                          },
+                          {
+                            $ne: [
+                              "$completedAt",
+                              null,
+                            ],
+                          },
+                        ],
+                      },
+                      {
+                        $subtract: [
+                          "$completedAt",
+                          "$assignedAt",
+                        ],
+                      },
+                      null,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+
+          as: "assignmentStats",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          let: {
+            departmentId: "$_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: [
+                        "$department",
+                        "$$departmentId",
+                      ],
+                    },
+                    {
+                      $eq: [
+                        "$role",
+                        "officer",
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $count: "count",
+            },
+          ],
+          as: "officerCount",
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          isActive: 1,
+
+          officerCount: {
+            $ifNull: [
+              {
+                $arrayElemAt: [
+                  "$officerCount.count",
+                  0,
+                ],
+              },
+              0,
+            ],
+          },
+
+          stats: {
+            $ifNull: [
+              {
+                $arrayElemAt: [
+                  "$assignmentStats",
+                  0,
+                ],
+              },
+              {
+                totalAssignments: 0,
+                activeAssignments: 0,
+                completedAssignments: 0,
+                rejectedAssignments: 0,
+                averageResolutionTimeMs: 0,
+              },
+            ],
+          },
+        },
+      },
+
+      {
+        $sort: {
+          "stats.activeAssignments": -1,
+          name: 1,
+        },
+      },
+    ]);
+
+    const departments = departmentStats.map(
+      (department) => {
+        const averageResolutionTimeMs =
+          department.stats
+            .averageResolutionTimeMs || 0;
+
+        return {
+          _id: department._id,
+
+          name: department.name,
+
+          isActive: department.isActive,
+
+          officerCount:
+            department.officerCount,
+
+          stats: {
+            totalAssignments:
+              department.stats.totalAssignments,
+
+            activeAssignments:
+              department.stats.activeAssignments,
+
+            completedAssignments:
+              department.stats.completedAssignments,
+
+            rejectedAssignments:
+              department.stats.rejectedAssignments,
+
+            averageResolutionTimeHours:
+              Number(
+                (
+                  averageResolutionTimeMs /
+                  (1000 * 60 * 60)
+                ).toFixed(2)
+              ),
+          },
+        };
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: departments.length,
+      departments,
+    });
+  } catch (error) {
+    console.error(
+      "Get department analytics error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch department analytics.",
+    });
+  }
+};
+
+
 module.exports = {
   getAnalyticsOverview,
   getOfficerAnalytics,
+  getDepartmentAnalytics,
 };
