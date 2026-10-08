@@ -1,5 +1,10 @@
+
 const Notification = require("../models/Notification");
-const { getIO } = require("../config/socket");
+
+const {
+  getIO,
+  getUnreadNotificationCount,
+} = require("../config/socket");
 
 const createNotification = async ({
   recipient,
@@ -11,7 +16,13 @@ const createNotification = async ({
   eventKey,
 }) => {
   try {
-    if (!recipient || !type || !title || !message || !eventKey) {
+    if (
+      !recipient ||
+      !type ||
+      !title ||
+      !message ||
+      !eventKey
+    ) {
       console.error(
         "Create notification skipped: required fields are missing."
       );
@@ -19,28 +30,29 @@ const createNotification = async ({
       return null;
     }
 
-    const result = await Notification.findOneAndUpdate(
-      {
-        eventKey,
-      },
-      {
-        $setOnInsert: {
-          recipient,
-          type,
-          title,
-          message,
-          report,
-          assignment,
+    const result =
+      await Notification.findOneAndUpdate(
+        {
           eventKey,
         },
-      },
-      {
-        upsert: true,
-        returnDocument: "after",
-        setDefaultsOnInsert: true,
-        includeResultMetadata: true,
-      }
-    );
+        {
+          $setOnInsert: {
+            recipient,
+            type,
+            title,
+            message,
+            report,
+            assignment,
+            eventKey,
+          },
+        },
+        {
+          upsert: true,
+          returnDocument: "after",
+          setDefaultsOnInsert: true,
+          includeResultMetadata: true,
+        }
+      );
 
     const notification = result.value;
 
@@ -52,8 +64,8 @@ const createNotification = async ({
       return null;
     }
 
-    // Only emit through Socket.IO when the notification
-    // was newly inserted. Existing eventKey = no duplicate emit.
+    // Only emit Socket.IO events when a new
+    // notification was actually created.
     const wasCreated =
       result.lastErrorObject?.updatedExisting === false;
 
@@ -61,15 +73,33 @@ const createNotification = async ({
       try {
         const io = getIO();
 
-        io.to(`user:${recipient.toString()}`).emit(
+        const unreadCount =
+          await getUnreadNotificationCount(
+            recipient
+          );
+
+        const userRoom =
+          `user:${recipient.toString()}`;
+
+        // Send the new notification
+        io.to(userRoom).emit(
           "notification:new",
           {
             notification,
+            unreadCount,
+          }
+        );
+
+        // Keep unread notification count synchronized
+        io.to(userRoom).emit(
+          "notifications:unread_count",
+          {
+            unreadCount,
           }
         );
       } catch (socketError) {
-        // Socket delivery failure should not break
-        // database notification creation.
+        // Socket delivery failure should never
+        // break database notification creation.
         console.error(
           "Socket notification emit error:",
           socketError.message

@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
 
+const {
+  emitUnreadNotificationCount,
+} = require("../config/socket");
+
 // GET /api/notifications
 const getMyNotifications = async (req, res) => {
   try {
@@ -167,6 +171,9 @@ const markNotificationAsRead = async (req, res) => {
       await notification.save();
     }
 
+
+    await emitUnreadNotificationCount(req.user._id);
+
     return res.status(200).json({
       success: true,
       message: "Notification marked as read.",
@@ -201,6 +208,8 @@ const markAllNotificationsAsRead = async (req, res) => {
         },
       }
     );
+
+    await emitUnreadNotificationCount(req.user._id);
 
     return res.status(200).json({
       success: true,

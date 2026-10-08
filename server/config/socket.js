@@ -2,8 +2,46 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 let io;
+
+// ----------------------------------------
+// Get unread notification count
+// ----------------------------------------
+
+const getUnreadNotificationCount = async (userId) => {
+  return Notification.countDocuments({
+    recipient: userId,
+    isRead: false,
+  });
+};
+
+// ----------------------------------------
+// Emit unread notification count
+// ----------------------------------------
+
+const emitUnreadNotificationCount = async (userId) => {
+  const unreadCount =
+    await getUnreadNotificationCount(userId);
+
+  if (!io) {
+    return unreadCount;
+  }
+
+  io.to(`user:${userId.toString()}`).emit(
+    "notifications:unread_count",
+    {
+      unreadCount,
+    }
+  );
+
+  return unreadCount;
+};
+
+// ----------------------------------------
+// Initialize Socket.IO
+// ----------------------------------------
 
 const initSocket = (httpServer) => {
   io = new Server(httpServer, {
@@ -43,9 +81,7 @@ const initSocket = (httpServer) => {
 
       const user = await User.findById(
         decoded.userId
-      ).select(
-        "_id name email role isActive"
-      );
+      ).select("_id name email role isActive");
 
       if (!user) {
         return next(
@@ -79,7 +115,7 @@ const initSocket = (httpServer) => {
   // Connection
   // ----------------------------------------
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     const userId = socket.user._id.toString();
     const role = socket.user.role;
 
@@ -93,6 +129,51 @@ const initSocket = (httpServer) => {
       `Socket connected: ${socket.user.email} (${socket.id})`
     );
 
+    // ----------------------------------------
+    // Initial unread notification sync
+    // ----------------------------------------
+
+    try {
+      const unreadCount =
+        await getUnreadNotificationCount(userId);
+
+      socket.emit("notifications:unread_count", {
+        unreadCount,
+      });
+    } catch (error) {
+      console.error(
+        "Initial unread notification sync error:",
+        error.message
+      );
+    }
+
+    // ----------------------------------------
+    // Manual notification sync
+    // ----------------------------------------
+
+    socket.on(
+      "notifications:sync",
+      async () => {
+        try {
+          const unreadCount =
+            await getUnreadNotificationCount(userId);
+
+          socket.emit("notifications:unread_count", {
+            unreadCount,
+          });
+        } catch (error) {
+          console.error(
+            "Notification sync error:",
+            error.message
+          );
+        }
+      }
+    );
+
+    // ----------------------------------------
+    // Disconnect
+    // ----------------------------------------
+
     socket.on("disconnect", (reason) => {
       console.log(
         `Socket disconnected: ${socket.user.email} (${reason})`
@@ -102,6 +183,10 @@ const initSocket = (httpServer) => {
 
   return io;
 };
+
+// ----------------------------------------
+// Get Socket.IO instance
+// ----------------------------------------
 
 const getIO = () => {
   if (!io) {
@@ -113,7 +198,13 @@ const getIO = () => {
   return io;
 };
 
+// ----------------------------------------
+// Exports
+// ----------------------------------------
+
 module.exports = {
   initSocket,
   getIO,
+  getUnreadNotificationCount,
+  emitUnreadNotificationCount,
 };
