@@ -1,6 +1,7 @@
 const Report = require("../models/Report");
 const User = require("../models/User");
 const Department = require("../models/Department");
+const ServiceArea = require("../models/ServiceArea");
 const REPORT_STATUSES = [
   "reported",
   "verified",
@@ -917,9 +918,227 @@ const getReportTrends = async (req, res) => {
 };
 
 
+
+
+const getServiceAreaAnalytics = async (req, res) => {
+  try {
+    const serviceAreaStats = await ServiceArea.aggregate([
+      {
+        $lookup: {
+          from: "assignments",
+          let: {
+            serviceAreaId: "$_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [
+                    "$serviceArea",
+                    "$$serviceAreaId",
+                  ],
+                },
+              },
+            },
+
+            {
+              $group: {
+                _id: null,
+
+                totalAssignments: {
+                  $sum: 1,
+                },
+
+                activeAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $in: [
+                          "$status",
+                          [
+                            "assigned",
+                            "accepted",
+                            "in_progress",
+                          ],
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                completedAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: [
+                          "$status",
+                          "completed",
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                rejectedAssignments: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: [
+                          "$status",
+                          "rejected",
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+
+          as: "assignmentStats",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "users",
+          let: {
+            serviceAreaId: "$_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: [
+                        "$role",
+                        "officer",
+                      ],
+                    },
+                    {
+                      $in: [
+                        "$$serviceAreaId",
+                        "$assignedAreas",
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $count: "count",
+            },
+          ],
+          as: "officerStats",
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          city: 1,
+          isActive: 1,
+
+          officerCount: {
+            $ifNull: [
+              {
+                $arrayElemAt: [
+                  "$officerStats.count",
+                  0,
+                ],
+              },
+              0,
+            ],
+          },
+
+          stats: {
+            $ifNull: [
+              {
+                $arrayElemAt: [
+                  "$assignmentStats",
+                  0,
+                ],
+              },
+              {
+                totalAssignments: 0,
+                activeAssignments: 0,
+                completedAssignments: 0,
+                rejectedAssignments: 0,
+              },
+            ],
+          },
+        },
+      },
+
+      {
+        $sort: {
+          "stats.activeAssignments": -1,
+          name: 1,
+        },
+      },
+    ]);
+
+    const serviceAreas = serviceAreaStats.map(
+      (serviceArea) => ({
+        _id: serviceArea._id,
+
+        name: serviceArea.name,
+
+        city: serviceArea.city,
+
+        isActive: serviceArea.isActive,
+
+        officerCount:
+          serviceArea.officerCount,
+
+        stats: {
+          totalAssignments:
+            serviceArea.stats.totalAssignments,
+
+          activeAssignments:
+            serviceArea.stats.activeAssignments,
+
+          completedAssignments:
+            serviceArea.stats.completedAssignments,
+
+          rejectedAssignments:
+            serviceArea.stats.rejectedAssignments,
+        },
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: serviceAreas.length,
+      serviceAreas,
+    });
+  } catch (error) {
+    console.error(
+      "Get service area analytics error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch service area analytics.",
+    });
+  }
+};
+
+
 module.exports = {
   getAnalyticsOverview,
   getOfficerAnalytics,
   getDepartmentAnalytics,
   getReportTrends,
+  getServiceAreaAnalytics,
 };
