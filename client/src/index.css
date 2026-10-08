@@ -1,71 +1,110 @@
 @import "tailwindcss";
 
-/* ========================================
-   RoadWatch Design System
-   ======================================== */
-
 :root {
-  /* Brand */
-  --rw-primary: #2563eb;
-  --rw-primary-dark: #1d4ed8;
+  /* ========================================
+     ROADWATCH BRAND COLORS
+     ======================================== */
 
-  /* Semantic */
+  /* Primary brand - roadwork orange */
+  --rw-primary: #f97316;
+  --rw-primary-dark: #ea580c;
+  --rw-primary-light: #fff7ed;
+
+  /* Brand foundation */
+  --rw-navy: #0f172a;
+  --rw-navy-light: #1e293b;
+
+  /* Semantic colors */
   --rw-success: #16a34a;
-  --rw-warning: #d97706;
-  --rw-danger: #dc2626;
-  --rw-info: #0891b2;
+  --rw-success-light: #f0fdf4;
 
-  /* Surfaces */
+  --rw-warning: #d97706;
+  --rw-warning-light: #fffbeb;
+
+  --rw-danger: #dc2626;
+  --rw-danger-light: #fef2f2;
+
+  --rw-info: #0891b2;
+  --rw-info-light: #ecfeff;
+
+  /* Backgrounds */
   --rw-background: #f8fafc;
   --rw-surface: #ffffff;
+  --rw-surface-muted: #f1f5f9;
 
   /* Text */
   --rw-text: #0f172a;
-  --rw-text-muted: #64748b;
+  --rw-text-secondary: #334155;
+  --rw-muted: #64748b;
+  --rw-placeholder: #94a3b8;
 
   /* Borders */
   --rw-border: #e2e8f0;
+  --rw-border-dark: #cbd5e1;
 
   /* Radius */
   --rw-radius-sm: 6px;
   --rw-radius-md: 10px;
   --rw-radius-lg: 14px;
+  --rw-radius-xl: 18px;
 
   /* Shadows */
   --rw-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
   --rw-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --rw-shadow-lg: 0 10px 30px rgba(15, 23, 42, 0.12);
 }
 
+
 /* ========================================
-   Tailwind Theme
+   TAILWIND THEME TOKENS
    ======================================== */
 
 @theme {
-  --color-rw-primary: #2563eb;
-  --color-rw-primary-dark: #1d4ed8;
+  --color-rw-primary: #f97316;
+  --color-rw-primary-dark: #ea580c;
+  --color-rw-primary-light: #fff7ed;
+
+  --color-rw-navy: #0f172a;
+  --color-rw-navy-light: #1e293b;
 
   --color-rw-success: #16a34a;
+  --color-rw-success-light: #f0fdf4;
+
   --color-rw-warning: #d97706;
+  --color-rw-warning-light: #fffbeb;
+
   --color-rw-danger: #dc2626;
+  --color-rw-danger-light: #fef2f2;
+
   --color-rw-info: #0891b2;
+  --color-rw-info-light: #ecfeff;
 
   --color-rw-background: #f8fafc;
   --color-rw-surface: #ffffff;
+  --color-rw-surface-muted: #f1f5f9;
 
   --color-rw-text: #0f172a;
+  --color-rw-text-secondary: #334155;
   --color-rw-muted: #64748b;
+  --color-rw-placeholder: #94a3b8;
 
   --color-rw-border: #e2e8f0;
+  --color-rw-border-dark: #cbd5e1;
 }
 
+
 /* ========================================
-   Global Base Styles
+   GLOBAL
    ======================================== */
 
 html,
 body,
 #root {
   min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -80,4 +119,60 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ========================================
+   DEFAULT ELEMENTS
+   ======================================== */
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   SELECTION
+   ======================================== */
+
+::selection {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--rw-text);
+}
+
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--rw-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
