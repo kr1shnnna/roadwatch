@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ========================================
+   RoadWatch Design System
+   ======================================== */
+
+:root {
+  /* Brand */
+  --rw-primary: #2563eb;
+  --rw-primary-dark: #1d4ed8;
+
+  /* Semantic */
+  --rw-success: #16a34a;
+  --rw-warning: #d97706;
+  --rw-danger: #dc2626;
+  --rw-info: #0891b2;
+
+  /* Surfaces */
+  --rw-background: #f8fafc;
+  --rw-surface: #ffffff;
+
+  /* Text */
+  --rw-text: #0f172a;
+  --rw-text-muted: #64748b;
+
+  /* Borders */
+  --rw-border: #e2e8f0;
+
+  /* Radius */
+  --rw-radius-sm: 6px;
+  --rw-radius-md: 10px;
+  --rw-radius-lg: 14px;
+
+  /* Shadows */
+  --rw-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --rw-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+/* ========================================
+   Tailwind Theme
+   ======================================== */
+
+@theme {
+  --color-rw-primary: #2563eb;
+  --color-rw-primary-dark: #1d4ed8;
+
+  --color-rw-success: #16a34a;
+  --color-rw-warning: #d97706;
+  --color-rw-danger: #dc2626;
+  --color-rw-info: #0891b2;
+
+  --color-rw-background: #f8fafc;
+  --color-rw-surface: #ffffff;
+
+  --color-rw-text: #0f172a;
+  --color-rw-muted: #64748b;
+
+  --color-rw-border: #e2e8f0;
+}
+
+/* ========================================
+   Global Base Styles
+   ======================================== */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--rw-background);
+  color: var(--rw-text);
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
