@@ -702,8 +702,224 @@ const getDepartmentAnalytics = async (req, res) => {
 };
 
 
+
+const getReportTrends = async (req, res) => {
+  try {
+    const {
+      period = "30d",
+      groupBy = "day",
+    } = req.query;
+
+    const allowedPeriods = [
+      "7d",
+      "30d",
+      "90d",
+      "1y",
+    ];
+
+    const allowedGroupBy = [
+      "day",
+      "week",
+      "month",
+    ];
+
+    if (!allowedPeriods.includes(period)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid period. Use 7d, 30d, 90d, or 1y.",
+      });
+    }
+
+    if (!allowedGroupBy.includes(groupBy)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid groupBy. Use day, week, or month.",
+      });
+    }
+
+    const now = new Date();
+    const startDate = new Date(now);
+
+    switch (period) {
+      case "7d":
+        startDate.setDate(
+          startDate.getDate() - 6
+        );
+        break;
+
+      case "30d":
+        startDate.setDate(
+          startDate.getDate() - 29
+        );
+        break;
+
+      case "90d":
+        startDate.setDate(
+          startDate.getDate() - 89
+        );
+        break;
+
+      case "1y":
+        startDate.setFullYear(
+          startDate.getFullYear() - 1
+        );
+        break;
+    }
+
+    let dateFormat;
+
+    switch (groupBy) {
+      case "day":
+        dateFormat = "%Y-%m-%d";
+        break;
+
+      case "week":
+        dateFormat = "%G-W%V";
+        break;
+
+      case "month":
+        dateFormat = "%Y-%m";
+        break;
+    }
+
+    const trends = await Report.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lte: now,
+          },
+        },
+      },
+
+      {
+        $project: {
+          period: {
+            $dateToString: {
+              format: dateFormat,
+              date: "$createdAt",
+              timezone: "Asia/Kolkata",
+            },
+          },
+
+          status: 1,
+        },
+      },
+
+      {
+        $group: {
+          _id: "$period",
+
+          totalReports: {
+            $sum: 1,
+          },
+
+          resolvedReports: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    "$status",
+                    [
+                      "resolved",
+                      "confirmed",
+                    ],
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+
+          reopenedReports: {
+            $sum: {
+              $cond: [
+                {
+                  $eq: [
+                    "$status",
+                    "reopened",
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+
+          rejectedReports: {
+            $sum: {
+              $cond: [
+                {
+                  $eq: [
+                    "$status",
+                    "rejected",
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+
+          period: "$_id",
+
+          totalReports: 1,
+
+          resolvedReports: 1,
+
+          reopenedReports: 1,
+
+          rejectedReports: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+
+      period,
+
+      groupBy,
+
+      startDate,
+
+      endDate: now,
+
+      trends,
+    });
+  } catch (error) {
+    console.error(
+      "Get report trends error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch report trends.",
+    });
+  }
+};
+
+
 module.exports = {
   getAnalyticsOverview,
   getOfficerAnalytics,
   getDepartmentAnalytics,
+  getReportTrends,
 };

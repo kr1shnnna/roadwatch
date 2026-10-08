@@ -4,6 +4,7 @@ const {
   getAnalyticsOverview,
     getOfficerAnalytics,
     getDepartmentAnalytics,
+    getReportTrends,
 } = require("../controllers/admin.analytics.controller");
 
 const protect = require("../middleware/auth");
@@ -32,6 +33,13 @@ router.get(
   protect,
   requireRole("authority_admin", "super_admin"),
   getDepartmentAnalytics
+);
+
+router.get(
+  "/trends",
+  protect,
+  requireRole("authority_admin", "super_admin"),
+  getReportTrends
 );
 
 
