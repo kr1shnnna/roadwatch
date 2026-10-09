@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import {
@@ -12,7 +13,6 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 
-// Parent animation: reveal children one after another.
 const staggerContainer = {
   hidden: {},
   visible: {
@@ -23,7 +23,6 @@ const staggerContainer = {
   },
 };
 
-// Gentle fade-in and upward movement.
 const fadeUp = {
   hidden: {
     opacity: 0,
@@ -63,42 +62,26 @@ const Hero = () => {
   };
 
   return (
-    <section
-      id="home"
-      className="relative overflow-hidden bg-white"
-    >
+    <section id="home" className="relative overflow-hidden bg-white">
       {/* Decorative background */}
       <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-orange-100/70 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-slate-100 blur-3xl" />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:min-h-[620px] lg:grid-cols-2 lg:gap-16 lg:px-10 lg:py-24">
-
         {/* LEFT: Hero content */}
         <motion.div
           variants={staggerContainer}
           initial={shouldReduceMotion ? false : "hidden"}
           animate="visible"
         >
-          {!loading && isAuthenticated && user?.name && (
-            <motion.div
-              variants={fadeUp}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800"
-            >
-              <CheckCircle2 size={17} />
-              Welcome back, {user.name.split(" ")[0]}
-            </motion.div>
-          )}
-
-          {!loading && !isAuthenticated && (
-            <motion.div
-              variants={fadeUp}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-800"
-            >
-              <Construction size={17} />
-              Built for the community
-            </motion.div>
-          )}
+          {/* Simple editorial eyebrow */}
+          <motion.p
+            variants={fadeUp}
+            className="mb-6 text-xs font-bold uppercase tracking-[0.2em] text-rw-primary sm:text-sm"
+          >
+            Local issues. Real action.
+          </motion.p>
 
           {/* Headline */}
           <motion.h1
@@ -116,10 +99,9 @@ const Hero = () => {
             variants={fadeUp}
             className="mt-7 max-w-xl text-lg leading-8 text-rw-muted sm:text-xl"
           >
-            Potholes, broken streetlights, blocked drains.
-            Problems in our neighbourhoods deserve attention.
-            RoadWatch helps communities report local issues
-            and follow them through to resolution.
+            Potholes, broken streetlights, blocked drains. Problems in our
+            neighbourhoods deserve attention. RoadWatch helps communities report
+            local issues and follow them through to resolution.
           </motion.p>
 
           {/* Actions */}
@@ -131,12 +113,8 @@ const Hero = () => {
               type="button"
               onClick={handlePrimaryAction}
               disabled={loading}
-              whileHover={
-                shouldReduceMotion ? undefined : { y: -2 }
-              }
-              whileTap={
-                shouldReduceMotion ? undefined : { scale: 0.98 }
-              }
+              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
               transition={{ duration: 0.2 }}
               className="group inline-flex items-center justify-center gap-2 rounded-xl bg-rw-primary px-6 py-3.5 font-semibold text-white shadow-sm transition-colors hover:bg-rw-primary-dark hover:shadow-md disabled:cursor-wait disabled:opacity-60"
             >
@@ -154,12 +132,8 @@ const Hero = () => {
 
             <motion.a
               href="#issues"
-              whileHover={
-                shouldReduceMotion ? undefined : { y: -2 }
-              }
-              whileTap={
-                shouldReduceMotion ? undefined : { scale: 0.98 }
-              }
+              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
               transition={{ duration: 0.2 }}
               className="inline-flex items-center justify-center rounded-xl border border-rw-border bg-white px-6 py-3.5 font-semibold text-rw-navy transition-colors hover:border-rw-border-dark hover:bg-rw-surface-muted"
             >
@@ -167,7 +141,7 @@ const Hero = () => {
             </motion.a>
           </motion.div>
 
-          {/* Supporting points appear in sequence */}
+          {/* Supporting points */}
           <motion.div
             variants={staggerContainer}
             className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm text-rw-muted"
@@ -192,14 +166,10 @@ const Hero = () => {
           </motion.div>
         </motion.div>
 
-        {/* RIGHT: Temporary issue panel */}
+        {/* RIGHT: Issue panel */}
         <motion.div
           className="relative mx-auto w-full max-w-xl"
-          initial={
-            shouldReduceMotion
-              ? false
-              : { opacity: 0, x: 35 }
-          }
+          initial={shouldReduceMotion ? false : { opacity: 0, x: 35 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{
             duration: 0.8,
@@ -210,7 +180,6 @@ const Hero = () => {
           <div className="absolute -inset-3 rotate-2 rounded-[2rem] bg-orange-100/80" />
 
           <div className="relative overflow-hidden rounded-[1.75rem] border border-rw-border bg-rw-background p-6 shadow-xl sm:p-8">
-
             <motion.div
               variants={staggerContainer}
               initial={shouldReduceMotion ? false : "hidden"}
@@ -280,40 +249,32 @@ const Hero = () => {
             </motion.div>
           </div>
         </motion.div>
-
       </div>
     </section>
   );
 };
 
-const IssueRow = ({
-  icon: Icon,
-  title,
-  description,
-  reduceMotion,
-}) => {
-  return (
-    <motion.div
-      variants={fadeUp}
-      whileHover={reduceMotion ? undefined : { y: -3 }}
-      transition={{ duration: 0.2 }}
-      className="flex items-center gap-4 rounded-xl border border-rw-border bg-white p-4 transition-colors hover:border-orange-200"
-    >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50">
-        <Icon size={23} className="text-rw-primary" />
-      </div>
+const IssueRow = ({ icon: Icon, title, description, reduceMotion }) => (
+  <motion.div
+    variants={fadeUp}
+    whileHover={reduceMotion ? undefined : { y: -3 }}
+    transition={{ duration: 0.2 }}
+    className="flex items-center gap-4 rounded-xl border border-rw-border bg-white p-4 transition-colors hover:border-orange-200"
+  >
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+      <Icon size={23} className="text-rw-primary" />
+    </div>
 
-      <div className="min-w-0">
-        <h3 className="text-sm font-semibold text-rw-navy sm:text-base">
-          {title}
-        </h3>
-
-        <p className="mt-1 text-xs leading-5 text-rw-muted sm:text-sm">
-          {description}
-        </p>
-      </div>
-    </motion.div>
-  );
-};
+    <div className="min-w-0">
+      <h3 className="text-sm font-semibold text-rw-navy sm:text-base">
+        {title}
+      </h3>
+      <p className="mt-1 text-xs leading-5 text-rw-muted sm:text-sm">
+        {description}
+      </p>
+    </div>
+  </motion.div>
+);
 
 export default Hero;
+
