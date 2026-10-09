@@ -17,6 +17,7 @@ import Register from "./pages/auth/Register";
 import CitizenLayout from "./layouts/CitizenLayout";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
+import ReportProblem from "./pages/citizen/ReportProblem";
 
 // Unauthorized access page
 const Unauthorized = () => {
@@ -42,7 +43,7 @@ const Unauthorized = () => {
   );
 };
 
-// Temporary officer dashboard until we build the real one
+// Temporary officer dashboard
 const OfficerDashboard = () => {
   return (
     <div className="min-h-screen bg-rw-background p-8">
@@ -64,20 +65,11 @@ function App() {
         <Routes>
           {/* ================= PUBLIC ROUTES ================= */}
 
-          <Route
-            path="/"
-            element={<Home />}
-          />
+          <Route path="/" element={<Home />} />
 
-          <Route
-            path="/login"
-            element={<Login />}
-          />
+          <Route path="/login" element={<Login />} />
 
-          <Route
-            path="/register"
-            element={<Register />}
-          />
+          <Route path="/register" element={<Register />} />
 
           {/* ================= CITIZEN ROUTES ================= */}
 
@@ -90,10 +82,7 @@ function App() {
             }
           >
             {/* /citizen */}
-            <Route
-              index
-              element={<CitizenDashboard />}
-            />
+            <Route index element={<CitizenDashboard />} />
 
             {/* /citizen/reports */}
             <Route
@@ -109,12 +98,7 @@ function App() {
             {/* /citizen/report */}
             <Route
               path="report"
-              element={
-                <CitizenComingSoon
-                  title="Report a Problem"
-                  description="The reporting form will let you describe an issue, select its location, and upload supporting photos."
-                />
-              }
+              element={<ReportProblem />}
             />
 
             {/* /citizen/notifications */}
@@ -169,4 +153,3 @@ function App() {
 }
 
 export default App;
-
