@@ -3,138 +3,119 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import {
-  AlertCircle,
   ArrowRight,
+  ArrowUpRight,
+  Camera,
   CheckCircle2,
-  ClipboardList,
   Clock3,
-  Construction,
   FilePlus2,
-  Lightbulb,
   MapPin,
   RefreshCw,
-  ShieldAlert,
-  TrendingUp,
+  Route,
+  TriangleAlert,
   Wrench,
 } from "lucide-react";
 
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
-const statusConfig = {
+const statuses = {
   reported: {
     label: "Reported",
-    classes: "bg-amber-50 text-amber-700 border-amber-200",
+    style: "bg-amber-50 text-amber-800 border-amber-200",
+    dot: "bg-amber-500",
   },
   verified: {
     label: "Verified",
-    classes: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    style: "bg-cyan-50 text-cyan-800 border-cyan-200",
+    dot: "bg-cyan-500",
   },
   assigned: {
     label: "Assigned",
-    classes: "bg-blue-50 text-blue-700 border-blue-200",
+    style: "bg-blue-50 text-blue-800 border-blue-200",
+    dot: "bg-blue-500",
   },
   accepted: {
     label: "Accepted",
-    classes: "bg-blue-50 text-blue-700 border-blue-200",
+    style: "bg-blue-50 text-blue-800 border-blue-200",
+    dot: "bg-blue-500",
   },
   in_progress: {
     label: "In progress",
-    classes: "bg-orange-50 text-orange-700 border-orange-200",
+    style: "bg-orange-50 text-orange-800 border-orange-200",
+    dot: "bg-orange-500",
   },
   resolved: {
     label: "Resolved",
-    classes: "bg-green-50 text-green-700 border-green-200",
+    style: "bg-green-50 text-green-800 border-green-200",
+    dot: "bg-green-500",
   },
   confirmed: {
     label: "Confirmed fixed",
-    classes: "bg-green-50 text-green-700 border-green-200",
+    style: "bg-green-50 text-green-800 border-green-200",
+    dot: "bg-green-500",
   },
   reopened: {
     label: "Reopened",
-    classes: "bg-red-50 text-red-700 border-red-200",
+    style: "bg-red-50 text-red-800 border-red-200",
+    dot: "bg-red-500",
   },
   rejected: {
     label: "Rejected",
-    classes: "bg-slate-100 text-slate-600 border-slate-200",
+    style: "bg-slate-100 text-slate-700 border-slate-200",
+    dot: "bg-slate-500",
   },
 };
 
-const categoryConfig = {
-  pothole: {
-    label: "Pothole",
-    icon: AlertCircle,
-  },
-  broken_road: {
-    label: "Damaged road",
-    icon: Construction,
-  },
-  streetlight: {
-    label: "Streetlight",
-    icon: Lightbulb,
-  },
-  traffic_signal: {
-    label: "Traffic signal",
-    icon: AlertCircle,
-  },
-  waterlogging: {
-    label: "Waterlogging",
-    icon: MapPin,
-  },
-  drainage: {
-    label: "Drainage",
-    icon: MapPin,
-  },
-  open_manhole: {
-    label: "Open manhole",
-    icon: ShieldAlert,
-  },
-  road_sign: {
-    label: "Road sign",
-    icon: AlertCircle,
-  },
-  road_debris: {
-    label: "Road debris",
-    icon: Wrench,
-  },
-  other: {
-    label: "Other civic issue",
-    icon: Construction,
-  },
+const categories = {
+  pothole: { label: "Pothole", icon: TriangleAlert },
+  broken_road: { label: "Damaged road", icon: Route },
+  streetlight: { label: "Streetlight", icon: Wrench },
+  traffic_signal: { label: "Traffic signal", icon: TriangleAlert },
+  waterlogging: { label: "Waterlogging", icon: MapPin },
+  drainage: { label: "Drainage", icon: MapPin },
+  open_manhole: { label: "Open manhole", icon: TriangleAlert },
+  road_sign: { label: "Road sign", icon: Route },
+  road_debris: { label: "Road debris", icon: Wrench },
+  other: { label: "Other civic issue", icon: MapPin },
 };
+
+const activeStatuses = new Set([
+  "reported",
+  "verified",
+  "assigned",
+  "accepted",
+  "in_progress",
+  "reopened",
+]);
 
 const getReportList = (payload) => {
   if (Array.isArray(payload)) return payload;
-
-  if (Array.isArray(payload?.reports)) {
-    return payload.reports;
-  }
-
-  if (Array.isArray(payload?.data?.reports)) {
-    return payload.data.reports;
-  }
-
-  if (Array.isArray(payload?.data)) {
-    return payload.data;
-  }
+  if (Array.isArray(payload?.reports)) return payload.reports;
+  if (Array.isArray(payload?.myReports)) return payload.myReports;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data?.reports)) return payload.data.reports;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data)) return payload.data;
 
   return [];
 };
 
 const getStatus = (status) =>
-  statusConfig[status] || {
+  statuses[status] || {
     label: status
       ? status.replaceAll("_", " ")
       : "Unknown",
-    classes: "bg-slate-100 text-slate-600 border-slate-200",
+    style: "bg-slate-100 text-slate-700 border-slate-200",
+    dot: "bg-slate-400",
   };
 
 const getCategory = (category) =>
-  categoryConfig[category] || {
+  categories[category] || {
     label: category
       ? category.replaceAll("_", " ")
       : "Civic issue",
-    icon: Construction,
+    icon: MapPin,
   };
 
 const formatDate = (value) => {
@@ -162,10 +143,7 @@ const getLocationText = (report) => {
     return report.address;
   }
 
-  if (
-    report?.location?.type === "Point" &&
-    Array.isArray(report.location.coordinates)
-  ) {
+  if (report?.location?.type === "Point") {
     return "Location attached";
   }
 
@@ -177,6 +155,7 @@ const getGreeting = () => {
 
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
+
   return "Good evening";
 };
 
@@ -185,21 +164,230 @@ const fadeUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.5, ease: "easeOut" },
   },
 };
 
 const stagger = {
   hidden: {},
   visible: {
-    transition: {
-      staggerChildren: 0.09,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
+
+/* =========================================================
+   CUSTOM NEIGHBOURHOOD ILLUSTRATION
+========================================================= */
+
+const NeighborhoodIllustration = () => (
+  <div className="relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#F4F0E7]">
+    <div className="absolute left-4 top-4 z-10 rounded-full border border-white/80 bg-white/90 px-3 py-2 text-[10px] font-bold tracking-[0.16em] text-rw-navy shadow-sm sm:left-5 sm:top-5">
+      YOUR COMMUNITY
+    </div>
+
+    <svg
+      viewBox="0 0 440 310"
+      className="block h-auto w-full"
+      role="img"
+      aria-label="Illustrated neighborhood with a road, reported problem marker, and repair location"
+    >
+      <rect width="440" height="310" fill="#F4F0E7" />
+
+      {/* Green spaces */}
+      <path
+        d="M0 0H115L135 40L92 85L0 70Z"
+        fill="#DDE8D1"
+      />
+      <path
+        d="M331 0H440V83L401 96L360 67Z"
+        fill="#DDE8D1"
+      />
+      <path
+        d="M0 233L59 218L111 256L100 310H0Z"
+        fill="#DDE8D1"
+      />
+
+      {/* Park trees */}
+      {[
+        [25, 25], [55, 42], [85, 23],
+        [365, 28], [397, 46], [420, 23],
+        [32, 267], [65, 281], [89, 258],
+      ].map(([x, y], i) => (
+        <g key={`tree-${i}`}>
+          <circle cx={x} cy={y} r="9" fill="#B4CDA5" />
+          <circle cx={x - 2} cy={y - 2} r="4" fill="#90B884" />
+        </g>
+      ))}
+
+      {/* Buildings */}
+      {[
+        [133, 17, 45, 38],
+        [190, 17, 54, 48],
+        [260, 20, 40, 35],
+        [137, 70, 49, 32],
+        [203, 80, 40, 31],
+        [267, 70, 43, 39],
+        [17, 102, 43, 43],
+        [72, 113, 34, 29],
+        [330, 106, 52, 37],
+        [393, 111, 30, 39],
+        [143, 245, 48, 37],
+        [205, 257, 55, 34],
+        [283, 240, 41, 45],
+        [345, 250, 49, 35],
+      ].map(([x, y, w, h], i) => (
+        <g key={`building-${i}`}>
+          <rect
+            x={x + 3}
+            y={y + 3}
+            width={w}
+            height={h}
+            rx="4"
+            fill="#CBD5E1"
+            opacity="0.65"
+          />
+          <rect
+            x={x}
+            y={y}
+            width={w}
+            height={h}
+            rx="4"
+            fill={i % 2 === 0 ? "#FFFFFF" : "#E3E7EB"}
+            stroke="#CDD4DA"
+          />
+          <path
+            d={`M${x + 9} ${y + 10}h${Math.max(8, w - 18)}`}
+            stroke="#D4DBE0"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        </g>
+      ))}
+
+      {/* Curved road */}
+      <path
+        d="M-25 220C78 185 119 228 195 204S313 141 465 171"
+        fill="none"
+        stroke="#CAD0D5"
+        strokeWidth="77"
+        strokeLinecap="round"
+      />
+      <path
+        d="M-25 220C78 185 119 228 195 204S313 141 465 171"
+        fill="none"
+        stroke="#66717B"
+        strokeWidth="67"
+        strokeLinecap="round"
+      />
+
+      {/* Road center dashes */}
+      <path
+        d="M-5 215C75 190 119 224 195 204S313 151 449 170"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="2.5"
+        strokeDasharray="10 12"
+        strokeLinecap="round"
+        opacity="0.8"
+      />
+
+      {/* Pothole */}
+      <ellipse
+        cx="127"
+        cy="211"
+        rx="19"
+        ry="7"
+        fill="#26313A"
+      />
+      <ellipse
+        cx="123"
+        cy="209"
+        rx="10"
+        ry="3"
+        fill="#3B4650"
+      />
+
+      {/* Orange report pin */}
+      <g transform="translate(124 163)">
+        <circle r="25" fill="#F97316" opacity="0.14" />
+        <circle
+          r="18"
+          fill="#F97316"
+          stroke="#FFFFFF"
+          strokeWidth="3"
+        />
+        <path
+          d="M0 -8L7 -5L6 3L0 8L-6 3L-7 -5Z"
+          fill="#FFFFFF"
+        />
+      </g>
+
+      {/* Navy maintenance marker */}
+      <g transform="translate(308 162)">
+        <circle r="23" fill="#0F172A" opacity="0.12" />
+        <circle
+          r="17"
+          fill="#0F172A"
+          stroke="#FFFFFF"
+          strokeWidth="3"
+        />
+        <path
+          d="M-7 -2L0 -8L7 -2V7H-7Z"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M-2 7V1H2V7"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="1.8"
+        />
+      </g>
+
+      {/* Orange route */}
+      <path
+        d="M143 180C177 186 207 190 237 174S281 158 290 160"
+        fill="none"
+        stroke="#FDBA74"
+        strokeWidth="3"
+        strokeDasharray="5 6"
+        strokeLinecap="round"
+      />
+    </svg>
+
+    {/* Floating report label */}
+    <div className="absolute bottom-4 left-3 flex items-center gap-2 rounded-xl border border-white/70 bg-white/95 px-3 py-2.5 shadow-lg sm:bottom-5 sm:left-5 sm:px-4">
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50">
+        <MapPin size={17} className="text-rw-primary" />
+      </span>
+
+      <div>
+        <p className="text-[10px] font-medium text-rw-muted">
+          Start with a report
+        </p>
+        <p className="text-xs font-bold text-rw-navy">
+          Make the issue visible
+        </p>
+      </div>
+    </div>
+
+    {/* Decorative status */}
+    <div className="absolute right-3 top-16 rounded-xl border border-white/70 bg-white/95 px-3 py-2 shadow-sm sm:right-5 sm:top-20">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-green-500" />
+        <span className="text-[10px] font-semibold text-rw-navy">
+          Accountability starts here
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   CITIZEN DASHBOARD
+========================================================= */
 
 const CitizenDashboard = () => {
   const { user } = useAuth();
@@ -222,15 +410,15 @@ const CitizenDashboard = () => {
 
         if (!active) return;
 
-        const reportList = getReportList(response.data);
+        const data = getReportList(response.data);
 
-        const sortedReports = [...reportList].sort(
+        const ordered = [...data].sort(
           (a, b) =>
             new Date(b.createdAt || 0).getTime() -
             new Date(a.createdAt || 0).getTime()
         );
 
-        setReports(sortedReports);
+        setReports(ordered);
       } catch (err) {
         if (!active) return;
 
@@ -251,377 +439,448 @@ const CitizenDashboard = () => {
   }, [retryKey]);
 
   const stats = useMemo(() => {
-    const needsAttention = new Set([
-      "reported",
-      "verified",
-      "assigned",
-      "accepted",
-      "reopened",
-    ]);
-
-    return [
-      {
-        label: "Total reports",
-        value: reports.length,
-        icon: ClipboardList,
-        color: "bg-blue-50 text-blue-700",
-        description: "Issues you've reported",
-      },
-      {
-        label: "Needs attention",
-        value: reports.filter((report) =>
-          needsAttention.has(report.status)
-        ).length,
-        icon: AlertCircle,
-        color: "bg-amber-50 text-amber-700",
-        description: "Awaiting further action",
-      },
-      {
-        label: "In progress",
-        value: reports.filter(
-          (report) => report.status === "in_progress"
-        ).length,
-        icon: Clock3,
-        color: "bg-orange-50 text-orange-700",
-        description: "Work currently underway",
-      },
-      {
-        label: "Resolved",
-        value: reports.filter((report) =>
-          ["resolved", "confirmed"].includes(report.status)
-        ).length,
-        icon: CheckCircle2,
-        color: "bg-green-50 text-green-700",
-        description: "Issues marked resolved",
-      },
-    ];
+    return {
+      total: reports.length,
+      active: reports.filter((r) =>
+        activeStatuses.has(r.status)
+      ).length,
+      inProgress: reports.filter(
+        (r) => r.status === "in_progress"
+      ).length,
+      resolved: reports.filter((r) =>
+        ["resolved", "confirmed"].includes(r.status)
+      ).length,
+    };
   }, [reports]);
 
   const recentReports = reports.slice(0, 4);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-7xl">
+    <div className="mx-auto w-full min-w-0 max-w-[1450px] space-y-8">
 
-      {/* ================= WELCOME BANNER ================= */}
+      {/* ================= EDITORIAL WELCOME ================= */}
       <motion.section
         initial={reduceMotion ? false : "hidden"}
         animate="visible"
         variants={stagger}
-        className="relative overflow-hidden rounded-2xl bg-rw-navy p-6 text-white shadow-sm sm:p-8 lg:p-10"
+        className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] xl:gap-8"
       >
-        {/* Decorative shapes */}
-        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-rw-primary/15" />
-        <div className="pointer-events-none absolute -bottom-28 right-40 h-56 w-56 rounded-full bg-white/5" />
+        <div className="flex min-w-0 flex-col justify-center py-2">
+          <motion.p
+            variants={fadeUp}
+            className="text-xs font-bold uppercase tracking-[0.2em] text-rw-primary"
+          >
+            YOUR COMMUNITY · YOUR VOICE
+          </motion.p>
 
-        <div className="relative z-10 flex flex-col justify-between gap-7 md:flex-row md:items-center">
-          <div className="max-w-2xl">
-            <motion.div
-              variants={fadeUp}
-              className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200"
-            >
-              <span className="h-2 w-2 rounded-full bg-rw-primary" />
-              Your community workspace
-            </motion.div>
+          <motion.h1
+            variants={fadeUp}
+            className="mt-5 text-4xl font-bold leading-[1.12] tracking-tight text-rw-navy sm:text-5xl"
+          >
+            {getGreeting()},
+            <span className="block text-rw-primary">
+              {user?.name?.trim()?.split(/\s+/)[0] || "there"}.
+            </span>
+            <span className="mt-2 block text-2xl font-semibold leading-snug text-rw-navy sm:text-3xl">
+              Let's make our streets better.
+            </span>
+          </motion.h1>
 
-            <motion.h1
-              variants={fadeUp}
-              className="text-3xl font-bold tracking-tight sm:text-4xl"
-            >
-              {getGreeting()},{" "}
-              <span className="text-orange-400">
-                {user?.name?.trim()?.split(/\s+/)[0] || "there"}
-              </span>
-              .
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base"
-            >
-              Every report is a step toward a better neighbourhood.
-              Track your reports, follow progress, and help verify
-              when a problem has been fixed.
-            </motion.p>
-
-            <motion.div variants={fadeUp}>
-              <Link
-                to="/citizen/report"
-                className="group mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-rw-primary-dark"
-              >
-                <FilePlus2 size={19} />
-                Report a Problem
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
-              </Link>
-            </motion.div>
-          </div>
+          <motion.p
+            variants={fadeUp}
+            className="mt-5 max-w-xl text-sm leading-7 text-rw-muted sm:text-base sm:leading-8"
+          >
+            Your neighbourhood isn't improved by looking away.
+            Report what needs fixing, keep track of the response,
+            and help make sure the work gets done.
+          </motion.p>
 
           <motion.div
             variants={fadeUp}
-            className="hidden shrink-0 items-center justify-center md:flex"
+            className="mt-7 flex flex-wrap items-center gap-3"
           >
-            <div className="flex h-32 w-32 items-center justify-center rounded-full border border-white/10 bg-white/5">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-rw-primary/15">
-                <Construction
-                  size={40}
-                  className="text-orange-400"
-                />
-              </div>
-            </div>
+            <Link
+              to="/citizen/report"
+              className="group inline-flex items-center gap-2 rounded-xl bg-rw-primary px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-rw-primary-dark"
+            >
+              <FilePlus2 size={18} />
+              Report a problem
+              <ArrowRight
+                size={17}
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </Link>
+
+            <Link
+              to="/citizen/reports"
+              className="inline-flex items-center gap-2 rounded-xl border border-rw-border bg-white px-5 py-3.5 text-sm font-semibold text-rw-navy transition-colors hover:bg-rw-surface-muted"
+            >
+              My reports
+              <ArrowUpRight size={17} />
+            </Link>
+          </motion.div>
+
+          <motion.div
+            variants={fadeUp}
+            className="mt-7 flex items-start gap-3 border-l-2 border-rw-primary pl-4"
+          >
+            <CheckCircle2
+              size={19}
+              className="mt-0.5 shrink-0 text-rw-success"
+            />
+
+            <p className="max-w-lg text-xs leading-6 text-rw-muted sm:text-sm">
+              Keep each report specific. A clear description,
+              accurate location, and useful photos help the
+              responsible team understand the problem.
+            </p>
           </motion.div>
         </div>
+
+        <motion.div
+          initial={
+            reduceMotion ? false : { opacity: 0, x: 24 }
+          }
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.65,
+            delay: reduceMotion ? 0 : 0.12,
+            ease: "easeOut",
+          }}
+          className="min-w-0"
+        >
+          <NeighborhoodIllustration />
+        </motion.div>
       </motion.section>
 
-      {/* ================= REPORT STATISTICS ================= */}
-      <section className="mt-8">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-rw-navy sm:text-xl">
-              Your reports at a glance
-            </h2>
-            <p className="mt-1 text-sm text-rw-muted">
-              A summary of your submitted issues.
-            </p>
-          </div>
-
-          <TrendingUp
-            size={22}
-            className="shrink-0 text-rw-primary"
-          />
+      {/* ================= REPORT SNAPSHOT ================= */}
+      <section className="overflow-hidden rounded-2xl border border-rw-border bg-white">
+        <div className="flex flex-col gap-1 border-b border-rw-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <h2 className="text-sm font-bold text-rw-navy">
+            Your reporting snapshot
+          </h2>
+          <p className="text-xs text-rw-muted">
+            Based on your submitted reports
+          </p>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => (
+        {error ? (
+          <div className="flex flex-col gap-3 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="text-sm leading-6 text-red-700">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setRetryKey((n) => n + 1)}
+              className="inline-flex items-center gap-2 self-start rounded-lg border border-rw-border px-3 py-2 text-sm font-semibold text-rw-navy hover:bg-rw-surface-muted"
+            >
+              <RefreshCw size={15} />
+              Try again
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4">
+            {[
+              {
+                label: "Total reports",
+                value: stats.total,
+                note: "Submitted by you",
+              },
+              {
+                label: "Active issues",
+                value: stats.active,
+                note: "Still need attention",
+              },
+              {
+                label: "Work in progress",
+                value: stats.inProgress,
+                note: "Currently underway",
+              },
+              {
+                label: "Resolved",
+                value: stats.resolved,
+                note: "Marked resolved",
+              },
+            ].map((item, index) => (
               <div
-                key={item}
-                className="animate-pulse rounded-2xl border border-rw-border bg-white p-5"
+                key={item.label}
+                className={`px-5 py-5 sm:px-6 sm:py-6 ${
+                  index % 2 === 1 ? "border-l border-rw-border" : ""
+                } ${
+                  index > 1 ? "border-t border-rw-border sm:border-t-0" : ""
+                } ${
+                  index === 2 ? "sm:border-l" : ""
+                }`}
               >
-                <div className="h-11 w-11 rounded-xl bg-slate-100" />
-                <div className="mt-5 h-4 w-2/3 rounded bg-slate-100" />
-                <div className="mt-3 h-8 w-1/3 rounded bg-slate-100" />
-                <div className="mt-3 h-3 w-4/5 rounded bg-slate-100" />
+                <p className="text-xs font-medium text-rw-muted sm:text-sm">
+                  {item.label}
+                </p>
+
+                <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-rw-navy sm:text-4xl">
+                  {loading ? "—" : item.value}
+                </p>
+
+                <p className="mt-2 text-[11px] leading-5 text-rw-muted sm:text-xs">
+                  {loading ? "Loading report data" : item.note}
+                </p>
               </div>
             ))}
           </div>
-        ) : error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-                <div>
-                  <p className="font-semibold text-red-800">
-                    Unable to load your report data
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-red-700">
-                    {error}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setRetryKey((key) => key + 1)}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
-              >
-                <RefreshCw size={16} />
-                Try again
-              </button>
-            </div>
-          </div>
-        ) : (
-          <motion.div
-            initial={reduceMotion ? false : "hidden"}
-            animate="visible"
-            variants={stagger}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
-          >
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-
-              return (
-                <motion.article
-                  key={stat.label}
-                  variants={fadeUp}
-                  whileHover={
-                    reduceMotion ? undefined : { y: -4 }
-                  }
-                  className="rounded-2xl border border-rw-border bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.color}`}
-                    >
-                      <Icon size={21} />
-                    </div>
-
-                    <span className="text-3xl font-bold tabular-nums text-rw-navy">
-                      {stat.value}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-5 font-semibold text-rw-text">
-                    {stat.label}
-                  </h3>
-
-                  <p className="mt-1 text-xs leading-5 text-rw-muted">
-                    {stat.description}
-                  </p>
-                </motion.article>
-              );
-            })}
-          </motion.div>
         )}
       </section>
 
-      {/* ================= RECENT REPORTS ================= */}
-      <section className="mt-10">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <h2 className="text-lg font-bold text-rw-navy sm:text-xl">
-              Recent reports
-            </h2>
-            <p className="mt-1 text-sm text-rw-muted">
-              Keep an eye on the latest issues you've submitted.
-            </p>
+      {/* ================= REPORTS + GUIDANCE ================= */}
+      <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+
+        {/* Recent reports */}
+        <section className="min-w-0">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.17em] text-rw-primary">
+                KEEP TRACK
+              </p>
+
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-rw-navy">
+                Your recent reports
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-rw-muted">
+                The latest issues you've brought to attention.
+              </p>
+            </div>
+
+            <Link
+              to="/citizen/reports"
+              className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-rw-primary hover:text-rw-primary-dark sm:inline-flex"
+            >
+              View all
+              <ArrowRight size={16} />
+            </Link>
           </div>
+
+          {loading ? (
+            <div className="mt-5 space-y-3">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="flex animate-pulse gap-4 rounded-2xl border border-rw-border bg-white p-5"
+                >
+                  <div className="h-12 w-12 shrink-0 rounded-xl bg-slate-100" />
+                  <div className="flex-1">
+                    <div className="h-4 w-2/3 rounded bg-slate-100" />
+                    <div className="mt-3 h-3 w-1/2 rounded bg-slate-100" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="mt-5 rounded-2xl border border-rw-border bg-white p-6">
+              <p className="text-sm leading-6 text-rw-muted">
+                Your reports will appear here when the data
+                is available.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setRetryKey((n) => n + 1)}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-rw-primary"
+              >
+                <RefreshCw size={15} />
+                Reload reports
+              </button>
+            </div>
+          ) : recentReports.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-rw-border bg-white px-6 py-10 text-center sm:px-10">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
+                <MapPin className="h-7 w-7 text-rw-primary" />
+              </div>
+
+              <h3 className="mt-5 text-lg font-bold text-rw-navy">
+                Your first report starts here.
+              </h3>
+
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-rw-muted">
+                Spotted a pothole, a broken streetlight,
+                or another problem? Put it on the record.
+              </p>
+
+              <Link
+                to="/citizen/report"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-rw-primary px-5 py-3 text-sm font-semibold text-white hover:bg-rw-primary-dark"
+              >
+                <FilePlus2 size={17} />
+                Create your first report
+              </Link>
+            </div>
+          ) : (
+            <motion.div
+              initial={reduceMotion ? false : "hidden"}
+              animate="visible"
+              variants={stagger}
+              className="mt-5 overflow-hidden rounded-2xl border border-rw-border bg-white"
+            >
+              {recentReports.map((report, index) => {
+                const category = getCategory(report.category);
+                const Icon = category.icon;
+                const status = getStatus(report.status);
+
+                return (
+                  <motion.article
+                    key={report._id || report.id}
+                    variants={fadeUp}
+                    className={`flex min-w-0 flex-col gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-6 ${
+                      index !== recentReports.length - 1
+                        ? "border-b border-rw-border"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+                        <Icon className="h-6 w-6 text-rw-primary" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="break-words font-semibold text-rw-navy">
+                          {report.title || category.label}
+                        </h3>
+
+                        <p className="mt-1 text-xs text-rw-muted">
+                          {category.label}
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-rw-muted">
+                          <span className="inline-flex items-center gap-1.5">
+                            <MapPin size={14} />
+                            {getLocationText(report)}
+                          </span>
+
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock3 size={14} />
+                            {formatDate(report.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                      <span
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${status.style}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+
+                      <Link
+                        to="/citizen/reports"
+                        aria-label={`View reports, including ${report.title || category.label}`}
+                        className="rounded-lg p-2 text-rw-muted hover:bg-orange-50 hover:text-rw-primary"
+                      >
+                        <ArrowUpRight size={18} />
+                      </Link>
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </motion.div>
+          )}
 
           <Link
             to="/citizen/reports"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-rw-primary transition-colors hover:text-rw-primary-dark"
+            className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-rw-primary sm:hidden"
           >
             View all reports
             <ArrowRight size={16} />
           </Link>
-        </div>
+        </section>
 
-        {loading ? (
-          <div className="mt-5 animate-pulse rounded-2xl border border-rw-border bg-white p-6">
-            <div className="h-5 w-48 rounded bg-slate-100" />
-            <div className="mt-4 h-14 rounded-xl bg-slate-100" />
-            <div className="mt-3 h-14 rounded-xl bg-slate-100" />
-          </div>
-        ) : error ? (
-          <div className="mt-5 rounded-2xl border border-rw-border bg-white p-6">
-            <p className="text-sm leading-6 text-rw-muted">
-              Recent reports are unavailable until your report data
-              can be loaded successfully.
-            </p>
-          </div>
-        ) : recentReports.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-rw-border bg-white px-5 py-12 text-center sm:px-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-              <ClipboardList className="h-7 w-7 text-rw-primary" />
+        {/* A helpful reporting panel rather than another statistics card */}
+        <aside className="min-w-0">
+          <div className="rounded-2xl bg-rw-navy p-6 text-white sm:p-7">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rw-primary/15">
+              <FilePlus2 className="h-6 w-6 text-orange-400" />
             </div>
 
-            <h3 className="mt-5 text-lg font-bold text-rw-navy">
-              No reports yet
-            </h3>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-rw-muted">
-              Have you spotted a pothole, a broken streetlight,
-              or another issue? Start by reporting it to RoadWatch.
+            <p className="mt-6 text-xs font-bold uppercase tracking-[0.17em] text-orange-300">
+              Make your report count
             </p>
+
+            <h2 className="mt-3 text-2xl font-bold leading-snug">
+              Help the right team understand the problem.
+            </h2>
+
+            <p className="mt-3 text-sm leading-7 text-slate-300">
+              A useful report gives the maintenance team enough
+              information to understand what happened and where
+              they need to respond.
+            </p>
+
+            <div className="mt-7 space-y-5">
+              {[
+                {
+                  icon: MapPin,
+                  title: "Pinpoint the location",
+                  text: "Choose the location as accurately as possible.",
+                },
+                {
+                  icon: Camera,
+                  title: "Show what's wrong",
+                  text: "Add clear photos when you can do so safely.",
+                },
+                {
+                  icon: CheckCircle2,
+                  title: "Follow the outcome",
+                  text: "Check updates and confirm the repair when appropriate.",
+                },
+              ].map(({ icon: Icon, title, text }) => (
+                <div key={title} className="flex items-start gap-3">
+                  <Icon
+                    size={19}
+                    className="mt-0.5 shrink-0 text-orange-400"
+                  />
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">
+                      {title}
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      {text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <Link
               to="/citizen/report"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-rw-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-rw-primary-dark"
+              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rw-primary px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-rw-primary-dark"
             >
-              <FilePlus2 size={17} />
-              Create your first report
+              Start a report
+              <ArrowRight size={17} />
             </Link>
           </div>
-        ) : (
-          <motion.div
-            initial={reduceMotion ? false : "hidden"}
-            animate="visible"
-            variants={stagger}
-            className="mt-5 overflow-hidden rounded-2xl border border-rw-border bg-white"
-          >
-            {recentReports.map((report, index) => {
-              const category = getCategory(report.category);
-              const Icon = category.icon;
-              const status = getStatus(report.status);
 
-              return (
-                <motion.div
-                  key={report._id || report.id}
-                  variants={fadeUp}
-                  className={`flex flex-col gap-4 p-5 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between sm:px-6 ${
-                    index !== recentReports.length - 1
-                      ? "border-b border-rw-border"
-                      : ""
-                  }`}
-                >
-                  <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50">
-                      <Icon className="h-6 w-6 text-rw-primary" />
-                    </div>
+          {/* Reporting philosophy */}
+          <div className="mt-4 rounded-2xl border border-rw-border bg-white p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50">
+                <CheckCircle2 className="h-5 w-5 text-rw-success" />
+              </div>
 
-                    <div className="min-w-0">
-                      <h3 className="truncate font-semibold text-rw-navy">
-                        {report.title || category.label}
-                      </h3>
-
-                      <p className="mt-1 text-xs font-medium capitalize text-rw-muted">
-                        {category.label}
-                      </p>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-rw-muted">
-                        <span className="inline-flex items-center gap-1.5">
-                          <MapPin size={14} />
-                          {getLocationText(report)}
-                        </span>
-
-                        <span>
-                          {formatDate(report.createdAt)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-3 sm:justify-end">
-                    <span
-                      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${status.classes}`}
-                    >
-                      {status.label}
-                    </span>
-
-                    <Link
-                      to="/citizen/reports"
-                      aria-label={`View your reports, including ${report.title || category.label}`}
-                      className="rounded-lg p-2 text-rw-muted transition-colors hover:bg-orange-50 hover:text-rw-primary"
-                    >
-                      <ArrowRight size={18} />
-                    </Link>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        )}
-      </section>
-
-      {/* ================= BOTTOM COMMUNITY NOTE ================= */}
-      <section className="mt-8 rounded-2xl border border-orange-100 bg-orange-50 p-5 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white">
-            <Construction className="h-5 w-5 text-rw-primary" />
+              <div>
+                <h3 className="font-semibold text-rw-navy">
+                  Report. Resolve. Verify.
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-rw-muted">
+                  The goal isn't just to record a problem. It's to
+                  make progress visible and help ensure the issue
+                  has actually been fixed.
+                </p>
+              </div>
+            </div>
           </div>
-
-          <div>
-            <h3 className="font-semibold text-rw-navy">
-              Every report makes a difference.
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-rw-muted">
-              Keep your descriptions clear, include the correct
-              location, and add relevant photos whenever possible.
-            </p>
-          </div>
-        </div>
-      </section>
+        </aside>
+      </div>
     </div>
   );
 };

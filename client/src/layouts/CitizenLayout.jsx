@@ -149,7 +149,7 @@ const CitizenLayout = () => {
           className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-rw-text-secondary transition-colors hover:bg-rw-surface-muted"
         >
           <Home size={18} className="text-rw-muted" />
-          Public Website
+          Home
         </Link>
 
         <button

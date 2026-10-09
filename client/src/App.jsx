@@ -1,5 +1,7 @@
+
 import {
   BrowserRouter,
+  Link,
   Navigate,
   Route,
   Routes,
@@ -11,11 +13,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+
 import CitizenLayout from "./layouts/CitizenLayout";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
 
-
+// Unauthorized access page
 const Unauthorized = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-rw-background px-4">
@@ -28,35 +31,28 @@ const Unauthorized = () => {
           You don't have permission to access this page.
         </p>
 
-        <a
-          href="/"
+        <Link
+          to="/"
           className="mt-6 inline-block rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition hover:bg-rw-primary-dark"
         >
           Back to Home
-        </a>
+        </Link>
       </div>
     </div>
   );
 };
 
-// Temporary placeholder until we build the real dashboard.
-const CitizenDashboard = () => {
-  return (
-    <div className="min-h-screen bg-rw-background p-8">
-      <h1 className="text-3xl font-bold text-rw-text">
-        Citizen Dashboard
-      </h1>
-    </div>
-  );
-};
-
-// Temporary placeholder until we build the real dashboard.
+// Temporary officer dashboard until we build the real one
 const OfficerDashboard = () => {
   return (
     <div className="min-h-screen bg-rw-background p-8">
       <h1 className="text-3xl font-bold text-rw-text">
         Officer Dashboard
       </h1>
+
+      <p className="mt-2 text-rw-muted">
+        The officer workspace will be built in a later phase.
+      </p>
     </div>
   );
 };
@@ -66,13 +62,13 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public homepage */}
+          {/* ================= PUBLIC ROUTES ================= */}
+
           <Route
             path="/"
             element={<Home />}
           />
 
-          {/* Public authentication pages */}
           <Route
             path="/login"
             element={<Login />}
@@ -83,17 +79,69 @@ function App() {
             element={<Register />}
           />
 
-          {/* Citizen-only route */}
+          {/* ================= CITIZEN ROUTES ================= */}
+
           <Route
             path="/citizen"
             element={
               <ProtectedRoute allowedRoles={["citizen"]}>
-                <CitizenDashboard />
+                <CitizenLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            {/* /citizen */}
+            <Route
+              index
+              element={<CitizenDashboard />}
+            />
 
-          {/* Officer-only route */}
+            {/* /citizen/reports */}
+            <Route
+              path="reports"
+              element={
+                <CitizenComingSoon
+                  title="My Reports"
+                  description="View your reports, filter them by status, and follow each issue through to resolution."
+                />
+              }
+            />
+
+            {/* /citizen/report */}
+            <Route
+              path="report"
+              element={
+                <CitizenComingSoon
+                  title="Report a Problem"
+                  description="The reporting form will let you describe an issue, select its location, and upload supporting photos."
+                />
+              }
+            />
+
+            {/* /citizen/notifications */}
+            <Route
+              path="notifications"
+              element={
+                <CitizenComingSoon
+                  title="Notifications"
+                  description="View updates when your reports are assigned, resolved, confirmed, or reopened."
+                />
+              }
+            />
+
+            {/* /citizen/profile */}
+            <Route
+              path="profile"
+              element={
+                <CitizenComingSoon
+                  title="My Profile"
+                  description="Manage your account details and profile settings here."
+                />
+              }
+            />
+          </Route>
+
+          {/* ================= OFFICER ROUTE ================= */}
+
           <Route
             path="/officer"
             element={
@@ -103,13 +151,13 @@ function App() {
             }
           />
 
-          {/* Unauthorized access */}
+          {/* ================= OTHER ROUTES ================= */}
+
           <Route
             path="/unauthorized"
             element={<Unauthorized />}
           />
 
-          {/* Unknown URLs */}
           <Route
             path="*"
             element={<Navigate to="/" replace />}
@@ -121,3 +169,4 @@ function App() {
 }
 
 export default App;
+
