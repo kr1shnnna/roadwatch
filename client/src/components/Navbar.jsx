@@ -7,6 +7,8 @@ import {
   X,
   UserRound,
   LogOut,
+  LayoutDashboard,
+  CircleUserRound,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +18,7 @@ const Navbar = () => {
   const { user, isAuthenticated, loading, logout } = useAuth();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const dashboardPath =
     user?.role === "citizen"
@@ -24,13 +27,25 @@ const Navbar = () => {
         ? "/officer"
         : "/unauthorized";
 
+  const profilePath =
+    user?.role === "citizen"
+      ? "/citizen/profile"
+      : user?.role === "officer"
+        ? "/officer/profile"
+        : "/unauthorized";
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+  };
+
+  const closeAccountMenu = () => {
+    setAccountMenuOpen(false);
   };
 
   const scrollToTop = (event) => {
     event.preventDefault();
     closeMobileMenu();
+    closeAccountMenu();
 
     window.scrollTo({
       top: 0,
@@ -40,6 +55,8 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     closeMobileMenu();
+    closeAccountMenu();
+
     await logout();
     navigate("/");
   };
@@ -47,7 +64,6 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-rw-border bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[82px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8 lg:px-10">
-
         {/* Logo */}
         <a
           href="#home"
@@ -77,6 +93,7 @@ const Navbar = () => {
 
           <a
             href="#issues"
+            onClick={closeAccountMenu}
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             Reportable Issues
@@ -84,6 +101,7 @@ const Navbar = () => {
 
           <a
             href="#how-it-works"
+            onClick={closeAccountMenu}
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             How It Works
@@ -112,22 +130,71 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link
-                  to={dashboardPath}
-                  className="inline-flex items-center gap-2 rounded-xl border border-rw-border px-4 py-2.5 text-sm font-semibold text-rw-navy transition-colors hover:bg-rw-surface-muted"
-                >
-                  <UserRound size={17} />
-                  Dashboard
-                </Link>
+                {/* Account icon and dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAccountMenuOpen((previous) => !previous)
+                    }
+                    aria-label="Open account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={accountMenuOpen}
+                    title="Account menu"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-rw-border bg-white text-rw-navy transition-colors hover:border-rw-primary hover:bg-rw-primary-light"
+                  >
+                    <UserRound size={21} strokeWidth={1.8} />
+                  </button>
 
+                  {accountMenuOpen && (
+                    <>
+                      {/* Click outside to close */}
+                      <button
+                        type="button"
+                        aria-label="Close account menu"
+                        onClick={closeAccountMenu}
+                        className="fixed inset-0 z-30 cursor-default"
+                      />
+
+                      {/* Dropdown */}
+                      <div
+                        role="menu"
+                        aria-label="Account menu"
+                        className="absolute right-0 top-full z-40 mt-3 w-52 overflow-hidden rounded-xl border border-rw-border bg-white p-2 shadow-lg"
+                      >
+                        <Link
+                          to={dashboardPath}
+                          role="menuitem"
+                          onClick={closeAccountMenu}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-rw-text-secondary transition-colors hover:bg-rw-primary-light hover:text-rw-primary"
+                        >
+                          <LayoutDashboard size={18} />
+                          Dashboard
+                        </Link>
+
+                        <Link
+                          to={profilePath}
+                          role="menuitem"
+                          onClick={closeAccountMenu}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-rw-text-secondary transition-colors hover:bg-rw-primary-light hover:text-rw-primary"
+                        >
+                          <CircleUserRound size={18} />
+                          Profile
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Separate logout button */}
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-xl px-3 py-2.5 text-sm text-rw-muted transition-colors hover:bg-rw-danger-light hover:text-rw-danger"
                   aria-label="Sign out"
                   title="Sign out"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-rw-muted transition-colors hover:bg-rw-danger-light hover:text-rw-danger"
                 >
-                  <LogOut size={19} />
+                  <LogOut size={20} />
                 </button>
               </>
             ))}
@@ -203,18 +270,27 @@ const Navbar = () => {
                   <Link
                     to={dashboardPath}
                     onClick={closeMobileMenu}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-rw-primary px-4 py-3 text-sm font-semibold text-white"
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-rw-text-secondary transition-colors hover:bg-rw-primary-light hover:text-rw-primary"
                   >
-                    <UserRound size={17} />
-                    Go to Dashboard
+                    <LayoutDashboard size={18} />
+                    Dashboard
+                  </Link>
+
+                  <Link
+                    to={profilePath}
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-rw-text-secondary transition-colors hover:bg-rw-primary-light hover:text-rw-primary"
+                  >
+                    <CircleUserRound size={18} />
+                    Profile
                   </Link>
 
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-rw-danger hover:bg-rw-danger-light"
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-rw-danger transition-colors hover:bg-rw-danger-light"
                   >
-                    <LogOut size={17} />
+                    <LogOut size={18} />
                     Sign Out
                   </button>
                 </div>
@@ -227,4 +303,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
