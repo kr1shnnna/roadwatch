@@ -1,6 +1,7 @@
 
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
+import IssuesSection from "../components/IssuesSection";
 
 const Home = () => {
   return (
@@ -8,8 +9,8 @@ const Home = () => {
       <Navbar />
       <main>
         <Hero />
-
-        {/* Reportable Issues section will go here next */}
+        
+        <IssuesSection />
       </main>
     </div>
   );
