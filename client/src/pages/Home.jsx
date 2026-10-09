@@ -2,6 +2,7 @@
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import IssuesSection from "../components/IssuesSection";
+import HowItWorks from "../components/HowItWorks";
 
 const Home = () => {
   return (
@@ -11,6 +12,8 @@ const Home = () => {
         <Hero />
         
         <IssuesSection />
+
+        <HowItWorks />
       </main>
     </div>
   );
