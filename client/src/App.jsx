@@ -11,6 +11,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import CitizenLayout from "./layouts/CitizenLayout";
+import CitizenDashboard from "./pages/citizen/CitizenDashboard";
+import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
+
 
 const Unauthorized = () => {
   return (
