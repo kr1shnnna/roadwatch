@@ -28,51 +28,62 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const scrollToTop = (event) => {
+    event.preventDefault();
     closeMobileMenu();
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleLogout = async () => {
+    closeMobileMenu();
+    await logout();
     navigate("/");
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-rw-border bg-white">
+    <header className="sticky top-0 z-50 border-b border-rw-border bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[82px] max-w-7xl items-center justify-between gap-6 px-5 sm:px-8 lg:px-10">
 
         {/* Logo */}
-        <Link
-          to="/"
-          onClick={closeMobileMenu}
-          className="shrink-0"
+        <a
+          href="#home"
+          onClick={scrollToTop}
           aria-label="RoadWatch home"
+          className="shrink-0"
         >
           <img
             src="/logo/roadwatch-logo.png"
             alt="RoadWatch"
             className="h-14 w-auto max-w-[210px] object-contain object-left"
           />
-        </Link>
+        </a>
 
         {/* Desktop navigation */}
         <nav
           className="hidden items-center gap-8 md:flex"
           aria-label="Main navigation"
         >
-          <Link
-            to="/"
+          <a
+            href="#home"
+            onClick={scrollToTop}
             className="text-sm font-semibold text-rw-primary"
           >
             Home
-          </Link>
+          </a>
 
           <a
-            href="/#issues"
+            href="#issues"
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             Reportable Issues
           </a>
 
           <a
-            href="/#how-it-works"
+            href="#how-it-works"
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             How It Works
@@ -112,7 +123,7 @@ const Navbar = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-rw-muted transition-colors hover:bg-rw-danger-light hover:text-rw-danger"
+                  className="rounded-xl px-3 py-2.5 text-sm text-rw-muted transition-colors hover:bg-rw-danger-light hover:text-rw-danger"
                   aria-label="Sign out"
                   title="Sign out"
                 >
@@ -132,11 +143,7 @@ const Navbar = () => {
           aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileMenuOpen}
         >
-          {mobileMenuOpen ? (
-            <X size={25} />
-          ) : (
-            <Menu size={25} />
-          )}
+          {mobileMenuOpen ? <X size={25} /> : <Menu size={25} />}
         </button>
       </div>
 
@@ -147,16 +154,16 @@ const Navbar = () => {
             className="mx-auto flex max-w-7xl flex-col gap-1"
             aria-label="Mobile navigation"
           >
-            <Link
-              to="/"
-              onClick={closeMobileMenu}
+            <a
+              href="#home"
+              onClick={scrollToTop}
               className="rounded-xl px-4 py-3 text-sm font-semibold text-rw-primary hover:bg-rw-surface-muted"
             >
               Home
-            </Link>
+            </a>
 
             <a
-              href="/#issues"
+              href="#issues"
               onClick={closeMobileMenu}
               className="rounded-xl px-4 py-3 text-sm font-medium text-rw-text-secondary hover:bg-rw-surface-muted"
             >
@@ -164,7 +171,7 @@ const Navbar = () => {
             </a>
 
             <a
-              href="/#how-it-works"
+              href="#how-it-works"
               onClick={closeMobileMenu}
               className="rounded-xl px-4 py-3 text-sm font-medium text-rw-text-secondary hover:bg-rw-surface-muted"
             >
@@ -220,3 +227,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

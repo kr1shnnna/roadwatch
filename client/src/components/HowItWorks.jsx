@@ -1,9 +1,6 @@
 
-import {
-  motion,
-  useReducedMotion,
-} from "motion/react";
-
+import { motion, useReducedMotion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   CheckCircle2,
@@ -12,6 +9,8 @@ import {
   Route,
   TriangleAlert,
 } from "lucide-react";
+
+import { useAuth } from "../context/AuthContext";
 
 const steps = [
   {
@@ -37,7 +36,7 @@ const steps = [
     icon: CheckCircle2,
     title: "Fix and verify",
     description:
-      "Follow the repair progress, review the evidence, and confirm whether the problem has been fixed.",
+      "Follow repair progress, review the evidence, and confirm whether the problem has been fixed.",
     label: "Resolution matters",
     color: "green",
   },
@@ -48,43 +47,59 @@ const revealUp = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
+    transition: {
+      duration: 0.6,
+      ease: "easeOut",
+    },
   },
 };
 
-const processVariants = {
+const stagger = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.17,
-      delayChildren: 0.12,
+      staggerChildren: 0.15,
+      delayChildren: 0.08,
     },
   },
 };
 
 const HowItWorks = () => {
   const reduceMotion = useReducedMotion();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+
+  const dashboardPath =
+    user?.role === "citizen"
+      ? "/citizen"
+      : user?.role === "officer"
+        ? "/officer"
+        : "/unauthorized";
+
+  const handleReport = () => {
+    navigate(isAuthenticated ? dashboardPath : "/login");
+  };
 
   return (
     <section
       id="how-it-works"
-      className="scroll-mt-24 overflow-hidden bg-white"
+      className="scroll-mt-24 overflow-x-clip bg-white"
     >
-      <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28">
+      <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28">
 
-        {/* Section heading */}
+        {/* ================= SECTION HEADING ================= */}
         <motion.div
           initial={reduceMotion ? false : "hidden"}
           whileInView="visible"
-          viewport={{ once: true, amount: 0.35 }}
-          variants={processVariants}
+          viewport={{ once: true, amount: 0.3 }}
+          variants={stagger}
           className="mx-auto max-w-3xl text-center"
         >
+          {/* Text-only badge */}
           <motion.div
             variants={revealUp}
-            className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-800"
+            className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-800"
           >
-            <Route size={16} />
             How RoadWatch works
           </motion.div>
 
@@ -103,39 +118,47 @@ const HowItWorks = () => {
             className="mx-auto mt-5 max-w-2xl text-base leading-7 text-rw-muted sm:text-lg sm:leading-8"
           >
             Every issue has a location, someone responsible for
-            addressing it, and a path toward resolution. Here's
+            addressing it, and a path toward resolution. Here is
             how RoadWatch helps connect those steps.
           </motion.p>
         </motion.div>
 
-        {/* Map + process */}
-        <div className="mt-14 grid items-center gap-10 lg:mt-16 lg:grid-cols-[1.12fr_0.88fr] lg:gap-14">
+        {/* ================= RESPONSIVE CONTENT GRID ================= */}
+        <div
+          className="
+            mt-14 grid w-full min-w-0 grid-cols-1 items-center gap-10
+            lg:mt-16 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]
+            xl:gap-12
+          "
+        >
 
-          {/* ================= MAP ILLUSTRATION ================= */}
+          {/* ================= NEIGHBOURHOOD MAP ================= */}
           <motion.div
             initial={
-              reduceMotion
-                ? false
-                : { opacity: 0, x: -28 }
+              reduceMotion ? false : { opacity: 0, x: -24 }
             }
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
+            viewport={{ once: true, amount: 0.12 }}
             transition={{
-              duration: 0.75,
+              duration: 0.7,
               ease: "easeOut",
             }}
-            className="relative min-w-0"
+            className="relative w-full min-w-0 max-w-full"
           >
-            <div className="absolute -inset-3 -rotate-1 rounded-[2rem] bg-orange-100/80" />
+            <div
+              aria-hidden="true"
+              className="absolute -inset-2 -rotate-1 rounded-[2rem] bg-orange-100/80 sm:-inset-3"
+            />
 
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-rw-border bg-rw-background p-3 shadow-lg sm:p-5">
+            <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-[1.75rem] border border-rw-border bg-rw-background p-3 shadow-lg sm:p-5">
 
               {/* Map header */}
-              <div className="flex items-center justify-between gap-3 px-2 py-3 sm:px-3">
-                <div>
+              <div className="flex min-w-0 items-center justify-between gap-3 px-1 py-3 sm:px-3">
+                <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-rw-muted">
                     The journey of an issue
                   </p>
+
                   <h3 className="mt-1 text-lg font-bold text-rw-navy sm:text-xl">
                     From report to repair
                   </h3>
@@ -146,14 +169,13 @@ const HowItWorks = () => {
                 </div>
               </div>
 
-              {/* Illustrative neighborhood map */}
-              <div className="relative mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-
+              {/* SVG neighbourhood map */}
+              <div className="relative mt-2 w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                 <svg
                   viewBox="0 0 640 440"
-                  className="block h-auto w-full"
+                  className="block h-auto w-full max-w-full"
                   role="img"
-                  aria-label="Illustration of a neighborhood with a highlighted route connecting a reported road issue to a maintenance team and a completed repair"
+                  aria-label="Illustrative neighbourhood map showing a reported issue, responsible team, and completed repair"
                 >
                   <defs>
                     <pattern
@@ -163,7 +185,7 @@ const HowItWorks = () => {
                       patternUnits="userSpaceOnUse"
                     >
                       <path
-                        d="M 24 0 L 0 0 0 24"
+                        d="M24 0H0V24"
                         fill="none"
                         stroke="#E2E8F0"
                         strokeWidth="1"
@@ -187,7 +209,7 @@ const HowItWorks = () => {
                     </filter>
                   </defs>
 
-                  {/* Map background */}
+                  {/* Background */}
                   <rect
                     width="640"
                     height="440"
@@ -200,28 +222,28 @@ const HowItWorks = () => {
                     fill="url(#rw-map-grid)"
                   />
 
-                  {/* Green spaces */}
+                  {/* Parks */}
                   <path
-                    d="M0 0 H150 L178 47 L145 98 L70 91 L0 120 Z"
+                    d="M0 0H150L178 47L145 98L70 91L0 120Z"
                     fill="#DCEEDB"
                   />
 
                   <path
-                    d="M450 0 H640 V90 L594 112 L550 85 L479 96 Z"
+                    d="M450 0H640V90L594 112L550 85L479 96Z"
                     fill="#DCEEDB"
                   />
 
                   <path
-                    d="M0 357 L70 337 L138 360 L151 440 H0 Z"
+                    d="M0 357L70 337L138 360L151 440H0Z"
                     fill="#DCEEDB"
                   />
 
                   <path
-                    d="M468 337 L526 314 L640 337 V440 H487 L469 391 Z"
+                    d="M468 337L526 314L640 337V440H487L469 391Z"
                     fill="#DCEEDB"
                   />
 
-                  {/* Small park trees */}
+                  {/* Trees */}
                   {[
                     [48, 42],
                     [78, 59],
@@ -283,18 +305,24 @@ const HowItWorks = () => {
                         fill="#CBD5E1"
                         opacity="0.45"
                       />
+
                       <rect
                         x={x}
                         y={y}
                         width={width}
                         height={height}
                         rx="5"
-                        fill={index % 3 === 0 ? "#FFFFFF" : "#E2E8F0"}
+                        fill={
+                          index % 3 === 0
+                            ? "#FFFFFF"
+                            : "#E2E8F0"
+                        }
                         stroke="#CBD5E1"
                         strokeWidth="1"
                       />
+
                       <path
-                        d={`M ${x + 10} ${y + 10} h ${Math.max(8, width - 20)}`}
+                        d={`M${x + 10} ${y + 10}h${Math.max(8, width - 20)}`}
                         stroke="#CBD5E1"
                         strokeWidth="2"
                         strokeLinecap="round"
@@ -302,7 +330,7 @@ const HowItWorks = () => {
                     </g>
                   ))}
 
-                  {/* Main roads: edges */}
+                  {/* Main road edges */}
                   <g
                     fill="none"
                     stroke="#D6DEE8"
@@ -310,23 +338,23 @@ const HowItWorks = () => {
                     strokeLinejoin="round"
                   >
                     <path
-                      d="M-20 126 C120 126 193 187 302 167 S484 100 660 126"
+                      d="M-20 126C120 126 193 187 302 167S484 100 660 126"
                       strokeWidth="43"
                     />
                     <path
-                      d="M103 -20 C124 86 155 180 141 265 S117 369 148 460"
+                      d="M103 -20C124 86 155 180 141 265S117 369 148 460"
                       strokeWidth="43"
                     />
                     <path
-                      d="M373 -20 C359 72 383 150 408 226 S437 337 420 460"
+                      d="M373 -20C359 72 383 150 408 226S437 337 420 460"
                       strokeWidth="43"
                     />
                     <path
-                      d="M-20 322 C100 295 230 335 328 301 S510 321 660 276"
+                      d="M-20 322C100 295 230 335 328 301S510 321 660 276"
                       strokeWidth="43"
                     />
                     <path
-                      d="M531 -20 C506 75 530 154 558 222 S601 350 582 460"
+                      d="M531 -20C506 75 530 154 558 222S601 350 582 460"
                       strokeWidth="43"
                     />
                   </g>
@@ -339,23 +367,23 @@ const HowItWorks = () => {
                     strokeLinejoin="round"
                   >
                     <path
-                      d="M-20 126 C120 126 193 187 302 167 S484 100 660 126"
+                      d="M-20 126C120 126 193 187 302 167S484 100 660 126"
                       strokeWidth="36"
                     />
                     <path
-                      d="M103 -20 C124 86 155 180 141 265 S117 369 148 460"
+                      d="M103 -20C124 86 155 180 141 265S117 369 148 460"
                       strokeWidth="36"
                     />
                     <path
-                      d="M373 -20 C359 72 383 150 408 226 S437 337 420 460"
+                      d="M373 -20C359 72 383 150 408 226S437 337 420 460"
                       strokeWidth="36"
                     />
                     <path
-                      d="M-20 322 C100 295 230 335 328 301 S510 321 660 276"
+                      d="M-20 322C100 295 230 335 328 301S510 321 660 276"
                       strokeWidth="36"
                     />
                     <path
-                      d="M531 -20 C506 75 530 154 558 222 S601 350 582 460"
+                      d="M531 -20C506 75 530 154 558 222S601 350 582 460"
                       strokeWidth="36"
                     />
                   </g>
@@ -367,16 +395,16 @@ const HowItWorks = () => {
                     strokeWidth="13"
                     strokeLinecap="round"
                   >
-                    <path d="M20 213 C174 199 252 222 335 212 S495 211 630 205" />
-                    <path d="M180 -10 C194 82 204 149 218 230 S240 357 256 452" />
-                    <path d="M464 -10 C458 78 458 167 467 235 S469 346 477 452" />
-                    <path d="M-10 385 C151 373 248 393 340 372 S492 394 650 356" />
-                    <path d="M-10 55 C159 66 268 61 405 55 S545 66 650 42" />
+                    <path d="M20 213C174 199 252 222 335 212S495 211 630 205" />
+                    <path d="M180 -10C194 82 204 149 218 230S240 357 256 452" />
+                    <path d="M464 -10C458 78 458 167 467 235S469 346 477 452" />
+                    <path d="M-10 385C151 373 248 393 340 372S492 394 650 356" />
+                    <path d="M-10 55C159 66 268 61 405 55S545 66 650 42" />
                   </g>
 
-                  {/* Orange route: reveal as the section enters view */}
+                  {/* Animated route */}
                   <motion.path
-                    d="M139 264 C178 280 199 287 227 273 S269 222 324 234 S377 245 408 205 S465 145 523 125"
+                    d="M139 264C178 280 199 287 227 273S269 222 324 234S377 245 408 205S465 145 523 125"
                     fill="none"
                     stroke="#F97316"
                     strokeWidth="5"
@@ -385,125 +413,121 @@ const HowItWorks = () => {
                     strokeDasharray="9 9"
                     initial={{
                       pathLength: reduceMotion ? 1 : 0,
-                      opacity: reduceMotion ? 1 : 0,
+                      opacity: 1,
                     }}
                     whileInView={{
                       pathLength: 1,
                       opacity: 1,
                     }}
-                    viewport={{ once: true, amount: 0.35 }}
+                    viewport={{ once: true, amount: 0.25 }}
                     transition={{
                       pathLength: {
                         duration: reduceMotion ? 0 : 1.8,
                         ease: "easeInOut",
-                        delay: 0.35,
                       },
-                      opacity: { duration: 0.3 },
                     }}
                   />
 
-                  {/* Report marker */}
-                  <motion.g
+                  {/* ORANGE MARKER — fixed SVG position */}
+                  <g
                     transform="translate(139 264)"
-                    initial={
-                      reduceMotion
-                        ? false
-                        : { opacity: 0, scale: 0.5 }
-                    }
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.35 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: reduceMotion ? 0 : 0.25,
-                      ease: "easeOut",
-                    }}
-                    style={{ transformBox: "view-box", transformOrigin: "139px 264px" }}
                     filter="url(#rw-map-shadow)"
                   >
-                    <path
-                      d="M0 -23 C-13 -23 -21 -14 -21 -2 C-21 11 0 29 0 29 C0 29 21 11 21 -2 C21 -14 13 -23 0 -23 Z"
-                      fill="#F97316"
-                    />
-                    <circle
-                      cx="0"
-                      cy="-3"
-                      r="8"
-                      fill="#FFFFFF"
-                    />
-                    <TriangleAlert
-                      x="-5"
-                      y="-8"
-                      width="10"
-                      height="10"
-                    />
-                  </motion.g>
+                    <motion.g
+                      initial={reduceMotion ? false : { opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true, amount: 0.25 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: reduceMotion ? 0 : 0.25,
+                      }}
+                    >
+                      <path
+                        d="M0 -23C-13 -23 -21 -14 -21 -2C-21 11 0 29 0 29S21 11 21 -2C21 -14 13 -23 0 -23Z"
+                        fill="#F97316"
+                      />
+                      <circle
+                        cx="0"
+                        cy="-3"
+                        r="8"
+                        fill="#FFFFFF"
+                      />
+                      <path
+                        d="M0 -8L4 -6L4 -1L0 2L-4 -1L-4 -6Z"
+                        fill="#F97316"
+                      />
+                      <circle
+                        cx="0"
+                        cy="5"
+                        r="1.4"
+                        fill="#F97316"
+                      />
+                    </motion.g>
+                  </g>
 
-                  {/* Responsible team marker */}
-                  <motion.g
+                  {/* NAVY MARKER — fixed SVG position */}
+                  <g
                     transform="translate(408 205)"
-                    initial={
-                      reduceMotion
-                        ? false
-                        : { opacity: 0, scale: 0.5 }
-                    }
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.35 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: reduceMotion ? 0 : 0.95,
-                      ease: "easeOut",
-                    }}
-                    style={{ transformBox: "view-box", transformOrigin: "408px 205px" }}
                     filter="url(#rw-map-shadow)"
                   >
-                    <circle
-                      r="19"
-                      fill="#0F172A"
-                    />
-                    <Construction
-                      x="-10"
-                      y="-10"
-                      width="20"
-                      height="20"
-                      color="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                  </motion.g>
+                    <motion.g
+                      initial={reduceMotion ? false : { opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true, amount: 0.25 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: reduceMotion ? 0 : 0.8,
+                      }}
+                    >
+                      <circle r="19" fill="#0F172A" />
 
-                  {/* Resolved marker */}
-                  <motion.g
+                      <path
+                        d="M-7 -5L0 -10L7 -5V7H-7Z"
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                      />
+
+                      <path
+                        d="M-3 7V0H3V7"
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                      />
+                    </motion.g>
+                  </g>
+
+                  {/* GREEN MARKER — fixed SVG position */}
+                  <g
                     transform="translate(523 125)"
-                    initial={
-                      reduceMotion
-                        ? false
-                        : { opacity: 0, scale: 0.5 }
-                    }
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, amount: 0.35 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: reduceMotion ? 0 : 1.65,
-                      ease: "easeOut",
-                    }}
-                    style={{ transformBox: "view-box", transformOrigin: "523px 125px" }}
                     filter="url(#rw-map-shadow)"
                   >
-                    <circle
-                      r="19"
-                      fill="#16A34A"
-                    />
-                    <CheckCircle2
-                      x="-10"
-                      y="-10"
-                      width="20"
-                      height="20"
-                      color="#FFFFFF"
-                      strokeWidth="2.5"
-                    />
-                  </motion.g>
+                    <motion.g
+                      initial={reduceMotion ? false : { opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true, amount: 0.25 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: reduceMotion ? 0 : 1.3,
+                      }}
+                    >
+                      <circle r="19" fill="#16A34A" />
+
+                      <path
+                        d="M-8 0L-3 5L8 -7"
+                        fill="none"
+                        stroke="#FFFFFF"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </motion.g>
+                  </g>
                 </svg>
 
-                {/* Map overlay labels */}
+                {/* Reported issue label */}
                 <div className="pointer-events-none absolute left-3 top-3 rounded-xl border border-rw-border bg-white/95 px-3 py-2 shadow-sm backdrop-blur sm:left-4 sm:top-4 sm:px-4">
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-rw-primary" />
@@ -513,6 +537,7 @@ const HowItWorks = () => {
                   </div>
                 </div>
 
+                {/* Resolved label */}
                 <div className="pointer-events-none absolute bottom-3 right-3 rounded-xl border border-green-100 bg-white/95 px-3 py-2 shadow-sm backdrop-blur sm:bottom-4 sm:right-4 sm:px-4">
                   <div className="flex items-center gap-2">
                     <CheckCircle2
@@ -524,44 +549,41 @@ const HowItWorks = () => {
                     </span>
                   </div>
                 </div>
-
               </div>
 
-              {/* Map legend */}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 px-2 py-4 sm:px-3">
+              {/* Colour legend */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-1 py-4 sm:gap-x-5 sm:px-3">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rw-primary" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rw-primary" />
                   <span className="text-xs text-rw-muted">
                     Reported location
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rw-navy" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rw-navy" />
                   <span className="text-xs text-rw-muted">
                     Responsible team
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rw-success" />
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-rw-success" />
                   <span className="text-xs text-rw-muted">
                     Resolved
                   </span>
                 </div>
               </div>
             </div>
-
-
           </motion.div>
 
           {/* ================= PROCESS STEPS ================= */}
           <motion.div
             initial={reduceMotion ? false : "hidden"}
             whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={processVariants}
-            className="relative"
+            viewport={{ once: true, amount: 0.12 }}
+            variants={stagger}
+            className="relative w-full min-w-0 max-w-full"
           >
             <div className="mb-8">
               <p className="text-sm font-bold uppercase tracking-[0.16em] text-rw-primary">
@@ -570,12 +592,13 @@ const HowItWorks = () => {
 
               <h3 className="mt-3 text-2xl font-bold leading-snug text-rw-navy sm:text-3xl">
                 Making local problems
-                <span className="text-rw-primary"> harder to ignore.</span>
+                <span className="text-rw-primary">
+                  {" "}harder to ignore.
+                </span>
               </h3>
             </div>
 
             <div className="relative space-y-7">
-              {/* Connecting line */}
               <div
                 aria-hidden="true"
                 className="absolute bottom-10 left-[23px] top-10 w-px bg-rw-border"
@@ -585,16 +608,19 @@ const HowItWorks = () => {
                 const Icon = step.icon;
 
                 const iconColors = {
-                  orange: "bg-orange-50 text-rw-primary border-orange-100",
-                  navy: "bg-slate-100 text-rw-navy border-slate-200",
-                  green: "bg-green-50 text-rw-success border-green-100",
+                  orange:
+                    "bg-orange-50 text-rw-primary border-orange-100",
+                  navy:
+                    "bg-slate-100 text-rw-navy border-slate-200",
+                  green:
+                    "bg-green-50 text-rw-success border-green-100",
                 };
 
                 return (
                   <motion.article
                     key={step.number}
                     variants={revealUp}
-                    className="relative flex gap-4 sm:gap-5"
+                    className="relative flex min-w-0 gap-4 sm:gap-5"
                   >
                     <div
                       className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border ${iconColors[step.color]}`}
@@ -607,6 +633,7 @@ const HowItWorks = () => {
                         <span className="text-xs font-bold tracking-widest text-rw-primary">
                           STEP {step.number}
                         </span>
+
                         <span className="text-xs text-rw-muted">
                           {step.label}
                         </span>
@@ -635,13 +662,14 @@ const HowItWorks = () => {
                   <CheckCircle2 className="h-5 w-5 text-rw-primary" />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-rw-navy">
                     Reporting is only the beginning.
                   </p>
+
                   <p className="mt-1 text-sm leading-6 text-rw-muted">
-                    The goal is to help make the fix visible and
-                    give the community a way to verify the outcome.
+                    The goal is to make the repair visible and give
+                    the community a way to verify the outcome.
                   </p>
                 </div>
               </div>
@@ -649,25 +677,27 @@ const HowItWorks = () => {
           </motion.div>
         </div>
 
-        {/* Bottom CTA */}
+        {/* ================= BOTTOM CTA ================= */}
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
+          viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="mt-16 flex flex-col items-center justify-between gap-5 rounded-2xl bg-rw-navy px-6 py-7 sm:flex-row sm:px-9 sm:py-8"
+          className="mt-16 flex flex-col items-start justify-between gap-5 rounded-2xl bg-rw-navy px-6 py-7 sm:flex-row sm:items-center sm:px-9 sm:py-8"
         >
-          <div>
+          <div className="min-w-0">
             <h3 className="text-xl font-bold text-white sm:text-2xl">
               Noticed something that needs fixing?
             </h3>
+
             <p className="mt-2 text-sm leading-6 text-slate-300">
               Make the problem visible. Help your community take action.
             </p>
           </div>
 
-          <a
-            href="/login"
+          <button
+            type="button"
+            onClick={handleReport}
             className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition-colors hover:bg-rw-primary-dark"
           >
             Report a Problem
@@ -675,7 +705,7 @@ const HowItWorks = () => {
               size={18}
               className="transition-transform group-hover:translate-x-1"
             />
-          </a>
+          </button>
         </motion.div>
 
       </div>
@@ -684,3 +714,4 @@ const HowItWorks = () => {
 };
 
 export default HowItWorks;
+
