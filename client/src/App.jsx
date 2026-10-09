@@ -8,14 +8,13 @@ import {
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import Home from "./pages/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
-import { getDashboardPath } from "./utils/redirectByRole";
-
 const Unauthorized = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-rw-background">
+    <div className="flex min-h-screen items-center justify-center bg-rw-background px-4">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-rw-text">
           Unauthorized
@@ -24,11 +23,19 @@ const Unauthorized = () => {
         <p className="mt-2 text-rw-muted">
           You don't have permission to access this page.
         </p>
+
+        <a
+          href="/"
+          className="mt-6 inline-block rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition hover:bg-rw-primary-dark"
+        >
+          Back to Home
+        </a>
       </div>
     </div>
   );
 };
 
+// Temporary placeholder until we build the real dashboard.
 const CitizenDashboard = () => {
   return (
     <div className="min-h-screen bg-rw-background p-8">
@@ -39,6 +46,7 @@ const CitizenDashboard = () => {
   );
 };
 
+// Temporary placeholder until we build the real dashboard.
 const OfficerDashboard = () => {
   return (
     <div className="min-h-screen bg-rw-background p-8">
@@ -49,57 +57,18 @@ const OfficerDashboard = () => {
   );
 };
 
-const RootRedirect = () => {
-  const token = localStorage.getItem(
-    "roadwatch_token"
-  );
-
-  const storedUser = localStorage.getItem(
-    "roadwatch_user"
-  );
-
-  if (!token || !storedUser) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
-  }
-
-  try {
-    const user = JSON.parse(storedUser);
-
-    return (
-      <Navigate
-        to={getDashboardPath(user.role)}
-        replace
-      />
-    );
-  } catch {
-    localStorage.removeItem("roadwatch_token");
-    localStorage.removeItem("roadwatch_user");
-
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
-  }
-};
-
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-
+          {/* Public homepage */}
           <Route
             path="/"
-            element={<RootRedirect />}
+            element={<Home />}
           />
 
+          {/* Public authentication pages */}
           <Route
             path="/login"
             element={<Login />}
@@ -110,43 +79,37 @@ function App() {
             element={<Register />}
           />
 
+          {/* Citizen-only route */}
           <Route
             path="/citizen"
             element={
-              <ProtectedRoute
-                allowedRoles={["citizen"]}
-              >
+              <ProtectedRoute allowedRoles={["citizen"]}>
                 <CitizenDashboard />
               </ProtectedRoute>
             }
           />
 
+          {/* Officer-only route */}
           <Route
             path="/officer"
             element={
-              <ProtectedRoute
-                allowedRoles={["officer"]}
-              >
+              <ProtectedRoute allowedRoles={["officer"]}>
                 <OfficerDashboard />
               </ProtectedRoute>
             }
           />
 
+          {/* Unauthorized access */}
           <Route
             path="/unauthorized"
             element={<Unauthorized />}
           />
 
+          {/* Unknown URLs */}
           <Route
             path="*"
-            element={
-              <Navigate
-                to="/"
-                replace
-              />
-            }
+            element={<Navigate to="/" replace />}
           />
-
         </Routes>
       </AuthProvider>
     </BrowserRouter>
