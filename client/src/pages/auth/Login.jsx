@@ -370,6 +370,36 @@ const handleSubmit = async (e) => {
               </Link>
             </div>
 
+
+
+            
+{/* Officer access information */}
+<div className="mt-6 rounded-2xl border border-rw-border bg-white p-4 sm:p-5">
+  <div className="flex items-start gap-3">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rw-navy text-white">
+      <ShieldCheck size={21} />
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="font-semibold text-rw-navy">
+          RoadWatch officer?
+        </h3>
+
+        <span className="rounded-full bg-rw-primary-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-rw-primary">
+          Staff access
+        </span>
+      </div>
+
+      <p className="mt-2 text-sm leading-6 text-rw-muted">
+        Sign in with your assigned officer account. You'll be
+        directed to your officer workspace automatically.
+      </p>
+    </div>
+  </div>
+</div>
+
+
             {/* =================================================
                 BOTTOM MESSAGE
             ================================================== */}
