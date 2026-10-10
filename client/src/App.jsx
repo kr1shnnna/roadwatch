@@ -27,6 +27,7 @@ import OfficerLayout from "./layouts/OfficerLayout";
 import OfficerDashboard from "./pages/officer/OfficerDashboard";
 import AssignedReports from "./pages/officer/AssignedReports";
 import InProgressReports from "./pages/officer/InProgressReports";
+import ResolvedReports from "./pages/officer/ResolvedReports";
 
 // Unauthorized access page
 const Unauthorized = () => (
@@ -149,10 +150,8 @@ function App() {
             <Route
               path="resolved"
               element={
-                <OfficerComingSoon
-                  title="Resolved Reports"
-                  description="Review reports you've resolved and the supporting evidence you've submitted."
-                />
+               
+                <ResolvedReports />
               }
             />
 
