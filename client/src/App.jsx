@@ -25,6 +25,7 @@ import Profile from "./pages/citizen/Profile";
 
 import OfficerLayout from "./layouts/OfficerLayout";
 import OfficerDashboard from "./pages/officer/OfficerDashboard";
+import AssignedReports from "./pages/officer/AssignedReports";
 
 // Unauthorized access page
 const Unauthorized = () => (
@@ -129,10 +130,8 @@ function App() {
             <Route
               path="assignments"
               element={
-                <OfficerComingSoon
-                  title="Assigned Reports"
-                  description="Review assigned issues, inspect their locations and evidence, and manage incoming work."
-                />
+              
+                <AssignedReports />
               }
             />
 
