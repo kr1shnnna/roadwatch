@@ -17,6 +17,7 @@ import Reports from "./pages/Reports";
 import ReportDetails from "./pages/ReportDetails";
 import UnassignedReports from "./pages/UnassignedReports";
 import Officers from "./pages/Officers";
+import Departments from "./pages/Departments";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -131,10 +132,8 @@ const AppRoutes = () => (
         <Route
           path="departments"
           element={
-            <AdminPlaceholder
-              title="Department Management"
-              description="Review departments, their supported categories, and their active status."
-            />
+          
+            <Departments />
           }
         />
 
