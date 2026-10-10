@@ -20,6 +20,7 @@ import Officers from "./pages/Officers";
 import Departments from "./pages/Departments";
 import ServiceAreas from "./pages/ServiceAreas";
 import Analytics from "./pages/Analytics";
+import AuditLogs from "./pages/AuditLogs";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -158,10 +159,8 @@ const AppRoutes = () => (
         <Route
           path="audit-logs"
           element={
-            <AdminPlaceholder
-              title="Audit Logs"
-              description="Review administrative actions and recorded operational changes."
-            />
+           
+            <AuditLogs />
           }
         />
 
