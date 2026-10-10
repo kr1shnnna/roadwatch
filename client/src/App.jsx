@@ -13,6 +13,7 @@ import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
 import ReportProblem from "./pages/citizen/ReportProblem";
 import MyReports from "./pages/citizen/MyReports";
 import Notifications from "./pages/citizen/Notifications";
+import Profile from "./pages/citizen/Profile";
 
 // Unauthorized access page
 const Unauthorized = () => {
@@ -81,15 +82,7 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
 
             {/* /citizen/profile */}
-            <Route
-              path="profile"
-              element={
-                <CitizenComingSoon
-                  title="My Profile"
-                  description="Manage your account details and profile settings here."
-                />
-              }
-            />
+            <Route path="profile" element={<Profile />} />
           </Route>
 
           {/* Protected officer route */}

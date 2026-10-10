@@ -147,7 +147,93 @@ const loginUser = async (req, res) => {
 };
 
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select(
+      "name email role isActive createdAt updatedAt"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Get current user error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch profile.",
+    });
+  }
+};
+
+const updateCurrentUser = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (typeof name !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Name is required.",
+      });
+    }
+
+    const normalizedName = name.trim();
+
+    if (normalizedName.length < 2 || normalizedName.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain between 2 and 50 characters.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          name: normalizedName,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("name email role isActive createdAt updatedAt");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Update current user error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile.",
+    });
+  }
+};
+
+
+
 module.exports = {
   registerUser,
   loginUser,
+  getCurrentUser,
+  updateCurrentUser,
 };

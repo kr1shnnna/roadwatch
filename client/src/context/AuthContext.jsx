@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
 } from "react";
 
 import api from "../services/api";
@@ -14,30 +15,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(
-      "roadwatch_token"
-    );
+    const token = localStorage.getItem("roadwatch_token");
 
-    const storedUser = localStorage.getItem(
-      "roadwatch_user"
-    );
+    const storedUser = localStorage.getItem("roadwatch_user");
 
     if (token && storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error(
-          "Failed to restore user session:",
-          error
-        );
+        console.error("Failed to restore user session:", error);
 
-        localStorage.removeItem(
-          "roadwatch_token"
-        );
+        localStorage.removeItem("roadwatch_token");
 
-        localStorage.removeItem(
-          "roadwatch_user"
-        );
+        localStorage.removeItem("roadwatch_user");
       }
     }
 
@@ -45,39 +35,32 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await api.post(
-      "/auth/login",
-      {
-        email,
-        password,
-      }
-    );
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
 
     const { token, user } = response.data;
 
-    localStorage.setItem(
-      "roadwatch_token",
-      token
-    );
+    localStorage.setItem("roadwatch_token", token);
 
-    localStorage.setItem(
-      "roadwatch_user",
-      JSON.stringify(user)
-    );
+    localStorage.setItem("roadwatch_user", JSON.stringify(user));
 
     setUser(user);
 
     return response.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem(
-      "roadwatch_token"
-    );
+  const updateUser = useCallback((updatedUser) => {
+    localStorage.setItem("roadwatch_user", JSON.stringify(updatedUser));
 
-    localStorage.removeItem(
-      "roadwatch_user"
-    );
+    setUser(updatedUser);
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem("roadwatch_token");
+
+    localStorage.removeItem("roadwatch_user");
 
     setUser(null);
   };
@@ -89,6 +72,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!user,
       }}
     >
@@ -101,9 +85,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider"
-    );
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;
