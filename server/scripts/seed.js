@@ -55,7 +55,6 @@ const seedData = async () => {
 
     const hashedOfficerPassword =
       await bcrypt.hash("Officer@123", 12);
-
     if (!officer) {
       officer = await User.create({
         name: "RoadWatch Officer",

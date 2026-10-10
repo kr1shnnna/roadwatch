@@ -183,14 +183,6 @@ const SidebarNavigation = ({
       </nav>
 
       <div className="mt-4 border-t border-white/10 pt-4">
-        <Link
-          to="/"
-          onClick={mobile ? onNavigate : undefined}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
-        >
-          <ExternalLink size={18} className="text-slate-400" />
-          Dashboard
-        </Link>
 
         <button
           type="button"
@@ -645,4 +637,3 @@ const AdminLayout = () => {
 
 export default AdminLayout;
 
-    
