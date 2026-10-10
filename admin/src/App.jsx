@@ -14,6 +14,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
+import ReportDetails from "./pages/ReportDetails";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -106,10 +107,8 @@ const AppRoutes = () => (
         <Route
           path="reports/:id"
           element={
-            <AdminPlaceholder
-              title="Report Details"
-              description="This page will show the full report, assignment history, evidence, and available administrative actions."
-            />
+           
+            <ReportDetails />
           }
         />
 
