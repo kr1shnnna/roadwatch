@@ -19,6 +19,7 @@ import UnassignedReports from "./pages/UnassignedReports";
 import Officers from "./pages/Officers";
 import Departments from "./pages/Departments";
 import ServiceAreas from "./pages/ServiceAreas";
+import Analytics from "./pages/Analytics";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -149,10 +150,8 @@ const AppRoutes = () => (
         <Route
           path="analytics"
           element={
-            <AdminPlaceholder
-              title="Analytics"
-              description="Review report trends, officer performance, department performance, and service-area workload."
-            />
+            
+            <Analytics />
           }
         />
 
