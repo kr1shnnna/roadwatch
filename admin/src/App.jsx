@@ -18,6 +18,7 @@ import ReportDetails from "./pages/ReportDetails";
 import UnassignedReports from "./pages/UnassignedReports";
 import Officers from "./pages/Officers";
 import Departments from "./pages/Departments";
+import ServiceAreas from "./pages/ServiceAreas";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -140,10 +141,8 @@ const AppRoutes = () => (
         <Route
           path="service-areas"
           element={
-            <AdminPlaceholder
-              title="Service Area Management"
-              description="Manage service-area records, geographic boundaries, and officer assignments."
-            />
+          
+            <ServiceAreas />
           }
         />
 
