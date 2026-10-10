@@ -40,40 +40,50 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  
+  
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!formData.email.trim() || !formData.password) {
-      setError("Please enter your email and password.");
-      return;
-    }
+  if (!formData.email.trim() || !formData.password) {
+    setError("Please enter your email and password.");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      setError("");
+  try {
+    setLoading(true);
+    setError("");
 
-      const loggedInUser = await login(
-        formData.email.trim(),
-        formData.password
-      );
+    const loginResponse = await login(
+      formData.email.trim(),
+      formData.password
+    );
 
-      if (loggedInUser?.role === "citizen") {
-        navigate("/citizen");
-      } else if (loggedInUser?.role === "officer") {
-        navigate("/officer");
-      } else {
-        navigate("/unauthorized");
-      }
-    } catch (err) {
+    // AuthContext returns response.data, where the user
+    // object is nested inside the response.
+    const loggedInUser = loginResponse?.user;
+
+    if (loggedInUser?.role === "citizen") {
+      navigate("/citizen", { replace: true });
+    } else if (loggedInUser?.role === "officer") {
+      navigate("/officer", { replace: true });
+    } else {
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to sign in. Please check your credentials."
+        `Your account role (${loggedInUser?.role || "unknown"}) is not supported by this application.`
       );
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    setError(
+      err?.response?.data?.message ||
+        err?.message ||
+        "Unable to sign in. Please check your credentials."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-rw-background">
