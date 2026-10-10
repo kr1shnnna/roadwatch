@@ -28,7 +28,7 @@ import OfficerDashboard from "./pages/officer/OfficerDashboard";
 import AssignedReports from "./pages/officer/AssignedReports";
 import InProgressReports from "./pages/officer/InProgressReports";
 import ResolvedReports from "./pages/officer/ResolvedReports";
-import OfficerNotifications from "./pages/officer/OfficerNotifications";
+
 
 // Unauthorized access page
 const Unauthorized = () => (
@@ -153,14 +153,6 @@ function App() {
               element={
                
                 <ResolvedReports />
-              }
-            />
-
-            {/* /officer/notifications */}
-            <Route
-              path="notifications"
-              element={
-              <OfficerNotifications />
               }
             />
 
