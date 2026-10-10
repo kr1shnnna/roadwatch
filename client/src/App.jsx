@@ -1,11 +1,4 @@
-
-import {
-  BrowserRouter,
-  Link,
-  Navigate,
-  Route,
-  Routes,
-} from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -19,15 +12,14 @@ import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
 import ReportProblem from "./pages/citizen/ReportProblem";
 import MyReports from "./pages/citizen/MyReports";
+import Notifications from "./pages/citizen/Notifications";
 
 // Unauthorized access page
 const Unauthorized = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-rw-background px-4">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-rw-text">
-          Unauthorized
-        </h1>
+        <h1 className="text-3xl font-bold text-rw-text">Unauthorized</h1>
 
         <p className="mt-2 text-rw-muted">
           You don't have permission to access this page.
@@ -48,9 +40,7 @@ const Unauthorized = () => {
 const OfficerDashboard = () => {
   return (
     <div className="min-h-screen bg-rw-background p-8">
-      <h1 className="text-3xl font-bold text-rw-text">
-        Officer Dashboard
-      </h1>
+      <h1 className="text-3xl font-bold text-rw-text">Officer Dashboard</h1>
 
       <p className="mt-2 text-rw-muted">
         The officer workspace will be built in a later phase.
@@ -82,27 +72,13 @@ function App() {
             <Route index element={<CitizenDashboard />} />
 
             {/* /citizen/reports */}
-            <Route
-              path="reports"
-              element={<MyReports />}
-            />
+            <Route path="reports" element={<MyReports />} />
 
             {/* /citizen/report */}
-            <Route
-              path="report"
-              element={<ReportProblem />}
-            />
+            <Route path="report" element={<ReportProblem />} />
 
             {/* /citizen/notifications */}
-            <Route
-              path="notifications"
-              element={
-                <CitizenComingSoon
-                  title="Notifications"
-                  description="View updates when your reports are assigned, resolved, confirmed, or reopened."
-                />
-              }
-            />
+            <Route path="notifications" element={<Notifications />} />
 
             {/* /citizen/profile */}
             <Route
@@ -127,15 +103,9 @@ function App() {
           />
 
           {/* Other routes */}
-          <Route
-            path="/unauthorized"
-            element={<Unauthorized />}
-          />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-          <Route
-            path="*"
-            element={<Navigate to="/" replace />}
-          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

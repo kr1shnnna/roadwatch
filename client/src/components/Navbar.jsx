@@ -1,17 +1,35 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  Menu,
-  X,
-  UserRound,
-  LogOut,
-  LayoutDashboard,
+  Bell,
+  CheckCheck,
   CircleUserRound,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  UserRound,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
+
+const formatNotificationTime = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+};
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -19,6 +37,13 @@ const Navbar = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState("");
+
+  const isCitizen = user?.role === "citizen";
 
   const dashboardPath =
     user?.role === "citizen"
@@ -34,18 +59,151 @@ const Navbar = () => {
         ? "/officer/profile"
         : "/unauthorized";
 
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const closeAccountMenu = () => setAccountMenuOpen(false);
+  const closeNotificationMenu = () => setNotificationMenuOpen(false);
+
+  const closeAllMenus = () => {
+    closeMobileMenu();
+    closeAccountMenu();
+    closeNotificationMenu();
   };
 
-  const closeAccountMenu = () => {
-    setAccountMenuOpen(false);
+  // Refresh the unread badge when authenticated.
+  // Poll for changes until the frontend Socket.IO listener is connected.
+  useEffect(() => {
+    if (!isAuthenticated || !isCitizen) {
+      setUnreadCount(0);
+      setRecentNotifications([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const refreshUnreadCount = async () => {
+      try {
+        const response = await api.get("/notifications/unread-count");
+
+        if (!cancelled) {
+          setUnreadCount(
+            Math.max(0, Number(response.data?.unreadCount) || 0)
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch unread notification count:", error);
+        }
+      }
+    };
+
+    refreshUnreadCount();
+
+    const intervalId = window.setInterval(refreshUnreadCount, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshUnreadCount();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, [isAuthenticated, isCitizen]);
+
+  const fetchRecentNotifications = async () => {
+    setNotificationsLoading(true);
+    setNotificationError("");
+
+    try {
+      const response = await api.get("/notifications", {
+        params: { page: 1, limit: 5 },
+      });
+
+      setRecentNotifications(
+        Array.isArray(response.data?.notifications)
+          ? response.data.notifications
+          : []
+      );
+
+      setUnreadCount((current) =>
+        Math.max(
+          0,
+          current,
+          ...[]
+        )
+      );
+
+      // Refresh from the authoritative count endpoint.
+      const countResponse = await api.get("/notifications/unread-count");
+      setUnreadCount(
+        Math.max(0, Number(countResponse.data?.unreadCount) || 0)
+      );
+    } catch (error) {
+      setNotificationError(
+        error.response?.data?.message ||
+          "Couldn't load your notifications."
+      );
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const handleNotificationToggle = () => {
+    if (notificationMenuOpen) {
+      closeNotificationMenu();
+      return;
+    }
+
+    closeAccountMenu();
+    setNotificationMenuOpen(true);
+    fetchRecentNotifications();
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      if (!notification.isRead) {
+        await api.patch(`/notifications/${notification._id}/read`);
+
+        setRecentNotifications((current) =>
+          current.map((item) =>
+            item._id === notification._id
+              ? { ...item, isRead: true, readAt: new Date().toISOString() }
+              : item
+          )
+        );
+
+        setUnreadCount((current) => Math.max(0, current - 1));
+      }
+
+      closeAllMenus();
+
+      // Open the report list until individual report details are available.
+      navigate("/citizen/reports");
+    } catch (error) {
+      setNotificationError(
+        error.response?.data?.message ||
+          "Couldn't mark this notification as read."
+      );
+    }
+  };
+
+  const handleLogout = async () => {
+    closeAllMenus();
+    await logout();
+    navigate("/");
   };
 
   const scrollToTop = (event) => {
     event.preventDefault();
-    closeMobileMenu();
-    closeAccountMenu();
+    closeAllMenus();
 
     window.scrollTo({
       top: 0,
@@ -53,13 +211,8 @@ const Navbar = () => {
     });
   };
 
-  const handleLogout = async () => {
-    closeMobileMenu();
-    closeAccountMenu();
-
-    await logout();
-    navigate("/");
-  };
+  const unreadBadge =
+    unreadCount > 9 ? "9+" : String(unreadCount);
 
   return (
     <header className="sticky top-0 z-50 border-b border-rw-border bg-white/95 backdrop-blur">
@@ -93,7 +246,7 @@ const Navbar = () => {
 
           <a
             href="#issues"
-            onClick={closeAccountMenu}
+            onClick={closeAllMenus}
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             Reportable Issues
@@ -101,7 +254,7 @@ const Navbar = () => {
 
           <a
             href="#how-it-works"
-            onClick={closeAccountMenu}
+            onClick={closeAllMenus}
             className="text-sm font-medium text-rw-text-secondary transition-colors hover:text-rw-primary"
           >
             How It Works
@@ -130,13 +283,154 @@ const Navbar = () => {
               </>
             ) : (
               <>
+                {/* Notification bell: shown for citizens */}
+                {isCitizen && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={handleNotificationToggle}
+                      aria-label={
+                        unreadCount > 0
+                          ? `${unreadCount} unread notifications`
+                          : "Notifications"
+                      }
+                      aria-haspopup="dialog"
+                      aria-expanded={notificationMenuOpen}
+                      title="Notifications"
+                      className={`relative flex h-11 w-11 items-center justify-center rounded-xl border bg-white transition-colors ${
+                        notificationMenuOpen
+                          ? "border-rw-primary bg-rw-primary-light text-rw-primary"
+                          : "border-rw-border text-rw-navy hover:border-rw-primary hover:bg-rw-primary-light"
+                      }`}
+                    >
+                      <Bell size={20} strokeWidth={1.8} />
+
+                      {unreadCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-rw-primary px-1 text-[10px] font-bold text-white">
+                          {unreadBadge}
+                        </span>
+                      )}
+                    </button>
+
+                    {notificationMenuOpen && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={closeNotificationMenu}
+                          aria-label="Close notifications"
+                          className="fixed inset-0 z-30 cursor-default"
+                        />
+
+                        <div
+                          role="dialog"
+                          aria-label="Recent notifications"
+                          className="absolute right-0 top-full z-40 mt-3 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-rw-border bg-white shadow-xl"
+                        >
+                          <div className="flex items-center justify-between border-b border-rw-border px-4 py-4">
+                            <div>
+                              <h2 className="font-bold text-rw-navy">
+                                Notifications
+                              </h2>
+                              <p className="mt-1 text-xs text-rw-muted">
+                                {unreadCount} unread
+                              </p>
+                            </div>
+
+                            <Bell
+                              size={20}
+                              className="text-rw-primary"
+                            />
+                          </div>
+
+                          {notificationError && (
+                            <p
+                              role="alert"
+                              className="px-4 py-3 text-sm text-rw-danger"
+                            >
+                              {notificationError}
+                            </p>
+                          )}
+
+                          {notificationsLoading ? (
+                            <div className="px-4 py-8 text-center text-sm text-rw-muted">
+                              Loading notifications...
+                            </div>
+                          ) : recentNotifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <Bell
+                                size={26}
+                                className="mx-auto text-rw-placeholder"
+                              />
+                              <p className="mt-3 text-sm font-semibold text-rw-navy">
+                                You're all caught up
+                              </p>
+                              <p className="mt-1 text-xs text-rw-muted">
+                                New report updates will appear here.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="max-h-[360px] overflow-y-auto">
+                              {recentNotifications.map((notification) => (
+                                <button
+                                  type="button"
+                                  key={notification._id}
+                                  onClick={() =>
+                                    handleNotificationClick(notification)
+                                  }
+                                  className={`flex w-full items-start gap-3 border-b border-rw-border px-4 py-3 text-left transition hover:bg-rw-background ${
+                                    notification.isRead
+                                      ? "bg-white"
+                                      : "bg-orange-50/60"
+                                  }`}
+                                >
+                                  <span
+                                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                                      notification.isRead
+                                        ? "bg-rw-border-dark"
+                                        : "bg-rw-primary"
+                                    }`}
+                                  />
+
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block text-sm font-semibold text-rw-navy">
+                                      {notification.title}
+                                    </span>
+                                    <span className="mt-1 line-clamp-2 block text-xs leading-5 text-rw-muted">
+                                      {notification.message}
+                                    </span>
+                                    <span className="mt-2 block text-[11px] text-rw-placeholder">
+                                      {formatNotificationTime(
+                                        notification.createdAt
+                                      )}
+                                    </span>
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <Link
+                            to="/citizen/notifications"
+                            onClick={closeAllMenus}
+                            className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-rw-primary transition hover:bg-rw-primary-light"
+                          >
+                            View all notifications
+                            <ArrowRight size={16} />
+                          </Link>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Account icon and dropdown */}
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() =>
-                      setAccountMenuOpen((previous) => !previous)
-                    }
+                    onClick={() => {
+                      closeNotificationMenu();
+                      setAccountMenuOpen((previous) => !previous);
+                    }}
                     aria-label="Open account menu"
                     aria-haspopup="menu"
                     aria-expanded={accountMenuOpen}
@@ -148,7 +442,6 @@ const Navbar = () => {
 
                   {accountMenuOpen && (
                     <>
-                      {/* Click outside to close */}
                       <button
                         type="button"
                         aria-label="Close account menu"
@@ -156,7 +449,6 @@ const Navbar = () => {
                         className="fixed inset-0 z-30 cursor-default"
                       />
 
-                      {/* Dropdown */}
                       <div
                         role="menu"
                         aria-label="Account menu"
@@ -267,6 +559,25 @@ const Navbar = () => {
                 </div>
               ) : (
                 <div className="mt-3 flex flex-col gap-2 border-t border-rw-border pt-4">
+                  {isCitizen && (
+                    <Link
+                      to="/citizen/notifications"
+                      onClick={closeMobileMenu}
+                      className="flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-rw-text-secondary transition-colors hover:bg-rw-primary-light hover:text-rw-primary"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Bell size={18} />
+                        Notifications
+                      </span>
+
+                      {unreadCount > 0 && (
+                        <span className="rounded-full bg-rw-primary px-2 py-0.5 text-xs font-bold text-white">
+                          {unreadBadge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+
                   <Link
                     to={dashboardPath}
                     onClick={closeMobileMenu}
