@@ -1,4 +1,13 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+
+import { Wrench } from "lucide-react";
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -9,58 +18,66 @@ import Register from "./pages/auth/Register";
 
 import CitizenLayout from "./layouts/CitizenLayout";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
-import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
 import ReportProblem from "./pages/citizen/ReportProblem";
 import MyReports from "./pages/citizen/MyReports";
 import Notifications from "./pages/citizen/Notifications";
 import Profile from "./pages/citizen/Profile";
 
+import OfficerLayout from "./layouts/OfficerLayout";
+import OfficerDashboard from "./pages/officer/OfficerDashboard";
+
 // Unauthorized access page
-const Unauthorized = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-rw-background px-4">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-rw-text">Unauthorized</h1>
-
-        <p className="mt-2 text-rw-muted">
-          You don't have permission to access this page.
-        </p>
-
-        <Link
-          to="/"
-          className="mt-6 inline-block rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition hover:bg-rw-primary-dark"
-        >
-          Back to Home
-        </Link>
-      </div>
-    </div>
-  );
-};
-
-// Temporary officer dashboard
-const OfficerDashboard = () => {
-  return (
-    <div className="min-h-screen bg-rw-background p-8">
-      <h1 className="text-3xl font-bold text-rw-text">Officer Dashboard</h1>
+const Unauthorized = () => (
+  <div className="flex min-h-screen items-center justify-center bg-rw-background px-4">
+    <div className="text-center">
+      <h1 className="text-3xl font-bold text-rw-text">
+        Unauthorized
+      </h1>
 
       <p className="mt-2 text-rw-muted">
-        The officer workspace will be built in a later phase.
+        You don't have permission to access this page.
       </p>
+
+      <Link
+        to="/"
+        className="mt-6 inline-block rounded-xl bg-rw-primary px-5 py-3 font-semibold text-white transition hover:bg-rw-primary-dark"
+      >
+        Back to Home
+      </Link>
     </div>
-  );
-};
+  </div>
+);
+
+// Temporary officer pages until their functionality is implemented
+const OfficerComingSoon = ({ title, description }) => (
+  <div className="rounded-2xl border border-rw-border bg-white px-6 py-14 text-center shadow-sm sm:py-16">
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rw-primary-light text-rw-primary">
+      <Wrench size={26} />
+    </div>
+
+    <h2 className="mt-5 text-2xl font-bold text-rw-navy">
+      {title}
+    </h2>
+
+    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-rw-muted">
+      {description}
+    </p>
+  </div>
+);
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public routes */}
+          {/* ================= PUBLIC ROUTES ================= */}
+
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected citizen routes */}
+          {/* ================= CITIZEN ROUTES ================= */}
+
           <Route
             path="/citizen"
             element={
@@ -69,36 +86,112 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {/* /citizen */}
             <Route index element={<CitizenDashboard />} />
 
-            {/* /citizen/reports */}
-            <Route path="reports" element={<MyReports />} />
+            <Route
+              path="reports"
+              element={<MyReports />}
+            />
 
-            {/* /citizen/report */}
-            <Route path="report" element={<ReportProblem />} />
+            <Route
+              path="report"
+              element={<ReportProblem />}
+            />
 
-            {/* /citizen/notifications */}
-            <Route path="notifications" element={<Notifications />} />
+            <Route
+              path="notifications"
+              element={<Notifications />}
+            />
 
-            {/* /citizen/profile */}
-            <Route path="profile" element={<Profile />} />
+            <Route
+              path="profile"
+              element={<Profile />}
+            />
           </Route>
 
-          {/* Protected officer route */}
+          {/* ================= OFFICER ROUTES ================= */}
+
           <Route
             path="/officer"
             element={
               <ProtectedRoute allowedRoles={["officer"]}>
-                <OfficerDashboard />
+                <OfficerLayout />
               </ProtectedRoute>
             }
+          >
+            {/* /officer */}
+            <Route
+              index
+              element={<OfficerDashboard />}
+            />
+
+            {/* /officer/assignments */}
+            <Route
+              path="assignments"
+              element={
+                <OfficerComingSoon
+                  title="Assigned Reports"
+                  description="Review assigned issues, inspect their locations and evidence, and manage incoming work."
+                />
+              }
+            />
+
+            {/* /officer/in-progress */}
+            <Route
+              path="in-progress"
+              element={
+                <OfficerComingSoon
+                  title="In Progress"
+                  description="Manage accepted assignments and keep their progress up to date."
+                />
+              }
+            />
+
+            {/* /officer/resolved */}
+            <Route
+              path="resolved"
+              element={
+                <OfficerComingSoon
+                  title="Resolved Reports"
+                  description="Review reports you've resolved and the supporting evidence you've submitted."
+                />
+              }
+            />
+
+            {/* /officer/notifications */}
+            <Route
+              path="notifications"
+              element={
+                <OfficerComingSoon
+                  title="Notifications"
+                  description="Keep track of new assignments and important report updates."
+                />
+              }
+            />
+
+            {/* /officer/profile */}
+            <Route
+              path="profile"
+              element={
+                <OfficerComingSoon
+                  title="My Profile"
+                  description="View your account details and officer information."
+                />
+              }
+            />
+          </Route>
+
+          {/* ================= OTHER ROUTES ================= */}
+
+          <Route
+            path="/unauthorized"
+            element={<Unauthorized />}
           />
 
-          {/* Other routes */}
-          <Route path="/unauthorized" element={<Unauthorized />} />
-
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="*"
+            element={<Navigate to="/" replace />}
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
