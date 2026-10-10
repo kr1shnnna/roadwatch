@@ -475,6 +475,8 @@ const updateOfficerStatus = async (req, res) => {
       });
     }
 
+    const previousStatus = officer.isActive;
+
     officer.isActive = isActive;
 
     await officer.save();
