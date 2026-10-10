@@ -18,6 +18,7 @@ import CitizenLayout from "./layouts/CitizenLayout";
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import CitizenComingSoon from "./pages/citizen/CitizenComingSoon";
 import ReportProblem from "./pages/citizen/ReportProblem";
+import MyReports from "./pages/citizen/MyReports";
 
 // Unauthorized access page
 const Unauthorized = () => {
@@ -63,16 +64,12 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* ================= PUBLIC ROUTES ================= */}
-
+          {/* Public routes */}
           <Route path="/" element={<Home />} />
-
           <Route path="/login" element={<Login />} />
-
           <Route path="/register" element={<Register />} />
 
-          {/* ================= CITIZEN ROUTES ================= */}
-
+          {/* Protected citizen routes */}
           <Route
             path="/citizen"
             element={
@@ -87,12 +84,7 @@ function App() {
             {/* /citizen/reports */}
             <Route
               path="reports"
-              element={
-                <CitizenComingSoon
-                  title="My Reports"
-                  description="View your reports, filter them by status, and follow each issue through to resolution."
-                />
-              }
+              element={<MyReports />}
             />
 
             {/* /citizen/report */}
@@ -124,8 +116,7 @@ function App() {
             />
           </Route>
 
-          {/* ================= OFFICER ROUTE ================= */}
-
+          {/* Protected officer route */}
           <Route
             path="/officer"
             element={
@@ -135,8 +126,7 @@ function App() {
             }
           />
 
-          {/* ================= OTHER ROUTES ================= */}
-
+          {/* Other routes */}
           <Route
             path="/unauthorized"
             element={<Unauthorized />}
