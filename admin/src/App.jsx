@@ -13,6 +13,7 @@ import { AdminAuthProvider, useAdminAuth } from "./context/AdminAuthContext";
 import AdminLayout from "./layouts/AdminLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -115,10 +116,8 @@ const AppRoutes = () => (
         <Route
           path="reports"
           element={
-            <AdminPlaceholder
-              title="Report Management"
-              description="Report search, filtering, details, assignment, and reassignment will be implemented here."
-            />
+           
+            <Reports />
           }
         />
 
