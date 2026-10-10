@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import ReportDetails from "./pages/ReportDetails";
+import UnassignedReports from "./pages/UnassignedReports";
 
 const RequireAdmin = () => {
   const { user, loading, isAdmin } = useAdminAuth();
@@ -97,10 +98,8 @@ const AppRoutes = () => (
         <Route
           path="reports/unassigned"
           element={
-            <AdminPlaceholder
-              title="Unassigned Reports"
-              description="This page will connect to the backend queue for reports that need an eligible officer."
-            />
+           
+            <UnassignedReports />
           }
         />
 
