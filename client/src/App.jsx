@@ -26,6 +26,7 @@ import Profile from "./pages/citizen/Profile";
 import OfficerLayout from "./layouts/OfficerLayout";
 import OfficerDashboard from "./pages/officer/OfficerDashboard";
 import AssignedReports from "./pages/officer/AssignedReports";
+import InProgressReports from "./pages/officer/InProgressReports";
 
 // Unauthorized access page
 const Unauthorized = () => (
@@ -139,10 +140,8 @@ function App() {
             <Route
               path="in-progress"
               element={
-                <OfficerComingSoon
-                  title="In Progress"
-                  description="Manage accepted assignments and keep their progress up to date."
-                />
+              
+                <InProgressReports />
               }
             />
 
