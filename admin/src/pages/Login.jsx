@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -15,22 +14,21 @@ import { useAdminAuth } from "../context/AdminAuthContext";
 const Brand = ({ logoFailed, onLogoError }) => (
   <div className="flex items-center gap-3">
     {logoFailed ? (
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rw-primary text-sm font-bold text-white">
-        RW
-      </div>
+      <>
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rw-primary text-sm font-bold text-white">
+          RW
+        </div>
+        <span className="text-xl font-bold tracking-tight text-white">
+          RoadWatch
+        </span>
+      </>
     ) : (
       <img
         src="/logo/roadwatch-logo.png"
         alt="RoadWatch"
         onError={onLogoError}
-        className="h-11 w-auto max-w-[175px] object-contain object-left"
+        className="h-16 w-auto max-w-[220px] object-contain object-center"
       />
-    )}
-
-    {logoFailed && (
-      <span className="text-xl font-bold tracking-tight text-white">
-        RoadWatch
-      </span>
     )}
   </div>
 );
@@ -49,7 +47,6 @@ const Login = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setLoading(true);
     setError("");
 
@@ -81,7 +78,6 @@ const Login = () => {
   return (
     <main className="min-h-screen bg-[#f1f4f8] p-0 sm:p-4 lg:p-6">
       <div className="mx-auto grid min-h-screen w-full max-w-[1500px] overflow-hidden bg-white sm:min-h-[calc(100vh-2rem)] sm:rounded-2xl sm:shadow-xl lg:min-h-[calc(100vh-3rem)] lg:grid-cols-[1.05fr_0.95fr]">
-
         {/* RoadWatch brand panel */}
         <aside
           className="relative hidden overflow-hidden bg-rw-navy lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16"
@@ -103,13 +99,16 @@ const Login = () => {
             }}
           />
 
-          <div className="relative z-10">
-            <Brand
-              logoFailed={logoFailed}
-              onLogoError={() => setLogoFailed(true)}
-            />
+          <div className="relative z-10 w-full">
+            {/* Centered, larger brand logo */}
+            <div className="flex w-full justify-center">
+              <Brand
+                logoFailed={logoFailed}
+                onLogoError={() => setLogoFailed(true)}
+              />
+            </div>
 
-            <div className="mt-20 max-w-xl xl:mt-28">
+            <div className="mx-auto mt-20 max-w-xl text-center xl:mt-28">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-400">
                 RoadWatch / Authority Console
               </p>
@@ -124,14 +123,14 @@ const Login = () => {
                 </span>
               </h1>
 
-              <p className="mt-6 max-w-md text-sm leading-7 text-slate-300 xl:text-base">
+              <p className="mx-auto mt-6 max-w-md text-sm leading-7 text-slate-300 xl:text-base">
                 Manage community road issues, coordinate the right teams,
                 and follow every report through resolution.
               </p>
             </div>
 
-            {/* The operational workflow */}
-            <div className="mt-12 max-w-md space-y-0">
+            {/* Operational workflow */}
+            <div className="mx-auto mt-12 max-w-md space-y-0 text-center">
               {[
                 {
                   number: "01",
@@ -148,16 +147,16 @@ const Login = () => {
                   title: "Track resolution",
                   description: "Keep the process visible and accountable.",
                 },
-              ].map((step, index) => (
+              ].map((step) => (
                 <div
                   key={step.number}
-                  className="flex gap-4 border-t border-white/10 py-4"
+                  className="flex flex-col items-center border-t border-white/10 py-4 text-center"
                 >
-                  <span className="pt-0.5 text-xs font-semibold tracking-wider text-orange-400">
+                  <span className="text-xs font-semibold tracking-wider text-orange-400">
                     {step.number}
                   </span>
 
-                  <div>
+                  <div className="mt-2">
                     <p className="text-sm font-semibold text-white">
                       {step.title}
                     </p>
@@ -201,20 +200,17 @@ const Login = () => {
             />
           </svg>
 
-          <div className="relative z-10 mt-10 flex items-center justify-between border-t border-white/10 pt-5">
+          <div className="relative z-10 mt-10 flex flex-col items-center justify-center gap-2 border-t border-white/10 pt-5 text-center">
             <p className="text-xs font-medium text-slate-400">
               LOCAL ISSUES. REAL ACTION.
             </p>
-            <p className="text-xs text-slate-500">
-              Authority access
-            </p>
+            <p className="text-xs text-slate-500">Authority access</p>
           </div>
         </aside>
 
         {/* Login section */}
         <section className="flex min-w-0 items-center justify-center px-6 py-10 sm:px-10 lg:px-12 xl:px-16">
           <div className="w-full max-w-md">
-
             {/* Mobile branding */}
             <div className="mb-12 lg:hidden">
               <div className="inline-flex items-center rounded-xl bg-rw-navy px-3 py-2">
@@ -316,9 +312,7 @@ const Login = () => {
                       showPassword ? "Hide password" : "Show password"
                     }
                     aria-pressed={showPassword}
-                    onClick={() =>
-                      setShowPassword((current) => !current)
-                    }
+                    onClick={() => setShowPassword((current) => !current)}
                     className="absolute inset-y-0 right-0 flex items-center rounded-r-xl px-3.5 text-slate-500 transition hover:text-rw-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                   >
                     {showPassword ? (
@@ -380,4 +374,3 @@ const Login = () => {
 };
 
 export default Login;
-
